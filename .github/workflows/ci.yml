@@ -15,23 +15,24 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ['8.6.5', '8.8.4', '8.10.2']
+        ghc: ['8.6.5:8.6', '8.8.4:8.8', '8.10.2:8.10:latest']
     steps:
       - uses: actions/checkout@v2
 
       - name: Build & Push images
         run: |
-          docker build . -f Dockerfile.dev --build-arg GHC=${{ matrix.ghc }} --tag hstreamdb/haskell:${{ matrix.ghc }}
+          IFS=':' read -ra image_tags < <(echo "${{ matrix.ghc }}")
+          image_tag="${image_tags[0]}"
+          docker build . -f Dockerfile.dev --build-arg GHC=${image_tag} --tag $IMAGE_NAME:${image_tag}
 
           if [ "${{ github.event_name }}" == 'push' ]; then
             if [ "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
               echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-              docker push hstreamdb/haskell:${{ matrix.ghc }}
-              if [ "${{ matrix.ghc }}" == '8.10.2' ]; then
-              echo "Push latest tag with ghc: ${{ matrix.ghc }}"
-                docker tag hstreamdb/haskell:${{ matrix.ghc }} hstreamdb/haskell:latest
-                docker push hstreamdb/haskell:latest
-              fi
+              docker push hstreamdb/haskell:${image_tag}
+              for tag in "${image_tags[@]:1}"; do
+                docker tag $IMAGE_NAME:$tag $IMAGE_NAME:$image_tag
+                docker push $IMAGE_NAME:$tag
+              done
             else
               echo "No such secrets, ignored."
             fi
