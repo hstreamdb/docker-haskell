@@ -6,9 +6,11 @@ libboost-filesystem1.65.1
 libboost-program-options1.65.1
 libboost-thread1.65.1
 libsnappy1v5
-libgoogle-glog0v5
+libgoogle-glog-dev
+libboost-regex1.65.1
 libunwind8
 libevent-2.1-6
 libevent-openssl-2.1-6
 libzookeeper-mt2
+libsodium-dev
 libssl1.1
