@@ -61,10 +61,8 @@ RUN apt-get update && \
       $(cat /tmp/requirements/ubuntu-dev.txt) && \
     rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
 
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/folly/ /usr/local/include/folly/
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/rocksdb/ /usr/local/include/rocksdb/
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/logdevice/ /usr/local/include/logdevice/
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/logdevice/ /usr/local/lib/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
 
 RUN ln -sr /usr/local/lib/librocksdb.so.6.6.1 /usr/local/lib/librocksdb.so.6 && \
     ln -sr /usr/local/lib/librocksdb.so.6.6.1 /usr/local/lib/librocksdb.so
