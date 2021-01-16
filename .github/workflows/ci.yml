@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - '*'
+    branches:
+      - release
+
   pull_request:
 
 env:
@@ -26,7 +29,10 @@ jobs:
           image_tag="${ghc_version}"
           image_tag_stable="${image_tag}-stable"
 
+          docker pull $IMAGE_NAME:${image_tag} || true
           docker build . -f Dockerfile.dev --build-arg GHC=${ghc_version} --tag $IMAGE_NAME:${image_tag}
+
+          docker pull $IMAGE_NAME:${image_tag_stable} || true
           docker build . -f Dockerfile.stable --build-arg GHC=${ghc_version} --tag $IMAGE_NAME:${image_tag_stable}
 
           if [ "${{ github.event_name }}" == 'push' ]; then
