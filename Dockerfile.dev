@@ -10,7 +10,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr && \
     rm -rf /var/lib/apt/lists/*
 
-ARG GHC=8.10.2
+ARG GHC=8.10.4
 ARG UBUNTU_KEY=063DAB2BDC0B3F9FCEBC378BFF3AEACEF6F88286
 ARG CABAL_INSTALL=3.4
 ARG STACK=2.5.1
@@ -51,6 +51,11 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
     /usr/local/bin/stack config set system-ghc --global true && \
     /usr/local/bin/stack config set install-ghc --global false && \
     rm -rf "$GNUPGHOME" /var/lib/apt/lists/* /stack.tar.gz.asc /stack.tar.gz
+
+# -------------------------------------------------------------------------------
+# Install grpc-dev library
+COPY --from=hstreamdb/grpc:1.35.0 /usr/local/include/ /usr/local/include/
+COPY --from=hstreamdb/grpc:1.35.0 /usr/local/lib/ /usr/local/lib/
 
 # -------------------------------------------------------------------------------
 # Install LogDevice client library
