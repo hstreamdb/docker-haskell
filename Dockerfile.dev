@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:focal
 
 # ------------------------------------------------------------------------------
 # Install haskell
@@ -38,6 +38,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         zlib1g-dev && \
     rm -rf "$GNUPGHOME" /var/lib/apt/lists/*
 
+# Install stack
 RUN export GNUPGHOME="$(mktemp -d)" && \
     for key in ${STACK_KEY} ${STACK_RELEASE_KEY}; do \
       gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$key" || \
@@ -62,10 +63,11 @@ COPY --from=hstreamdb/grpc:1.35.0 /usr/local/lib/ /usr/local/lib/
 
 COPY requirements/ /tmp/requirements/
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      $(cat /tmp/requirements/ubuntu-dev.txt) && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+      $(cat /tmp/requirements/ubuntu-focal-dev.txt) && \
     rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
 
+COPY --from=hstreamdb/logdevice-client:latest /usr/lib/libjemalloc* /usr/lib/
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
 

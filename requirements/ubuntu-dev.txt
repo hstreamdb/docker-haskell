@@ -14,7 +14,7 @@ libssl-dev
 libevent-dev
 libevent-openssl-2.1-6
 libdouble-conversion-dev
-libzookeeper-mt2
+libzookeeper-mt-dev
 libgoogle-glog-dev
 libjemalloc1
 libsnappy1v5
