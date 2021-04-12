@@ -20,7 +20,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
     gpgconf --kill all && \
     echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu bionic main' > /etc/apt/sources.list.d/ghc.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
         cabal-install-${CABAL_INSTALL} \
         curl \
         g++ \
