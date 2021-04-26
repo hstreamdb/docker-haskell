@@ -28,7 +28,7 @@ jobs:
           ghc_version="${image_tags[0]}"
           image_tag="${ghc_version}"
           docker pull $IMAGE_NAME:${image_tag} || true
-          docker build . -f Dockerfile.dev --build-arg GHC=${ghc_version} --tag $IMAGE_NAME:${image_tag}
+          DOCKER_BUILDKIT=1 docker build . -f Dockerfile --build-arg GHC=${ghc_version} --tag $IMAGE_NAME:${image_tag}
 
           if [ "${{ github.event_name }}" == 'push' ]; then
             if [ "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ['8.6.5:8.6', '8.8.4:8.8', '8.10.2', '8.10.3', '8.10.4:8.10:latest']
+        ghc: ['8.6.5:8.6', '8.8.4:8.8', '8.10.4:8.10:latest']
     steps:
       - uses: actions/checkout@v2
 

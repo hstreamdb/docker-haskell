@@ -1,0 +1,90 @@
+# You may consifer using hstreamdb/haskell instead of this hstreamdb/hsthrift image.
+#
+# docker build . -f dockerfiles/hsthrift -t hstreamdb/hsthrift
+
+FROM ubuntu:focal as builder
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG GHC=8.10.4
+ARG UBUNTU_KEY=063DAB2BDC0B3F9FCEBC378BFF3AEACEF6F88286
+ARG CABAL_INSTALL=3.4
+
+RUN export GNUPGHOME="$(mktemp -d)" && \
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_KEY} && \
+    gpg --batch --armor --export ${UBUNTU_KEY} > /etc/apt/trusted.gpg.d/haskell.org.gpg.asc && \
+    gpgconf --kill all && \
+    echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu bionic main' > /etc/apt/sources.list.d/ghc.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        cabal-install-${CABAL_INSTALL} \
+        curl \
+        g++ \
+        ghc-${GHC} \
+        git \
+        libsqlite3-dev \
+        libtinfo-dev \
+        make \
+        netbase \
+        openssh-client \
+        xz-utils \
+        zlib1g-dev && \
+    rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
+
+ENV PATH /root/.cabal/bin:/root/.local/bin:/usr/local/bin:/opt/cabal/${CABAL_INSTALL}/bin:/opt/ghc/${GHC}/bin:$PATH
+ENV LD_LIBRARY_PATH /usr/local/lib:$LD_LIBRARY_PATH
+ENV PKG_CONFIG_PATH /usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+
+# ------------------------------------------------------------------------------
+# Install latest cabal
+
+ARG CABAL_MIRROR_NAME=hackage.haskell.org
+ARG CABAL_MIRROR_URL=http://hackage.haskell.org
+RUN cabal user-config init && echo "\
+repository $CABAL_MIRROR_NAME \n\
+  url: $CABAL_MIRROR_URL \n\
+" > /root/.cabal/config && cabal user-config update
+
+ARG CABAL_INSTANLL_RC_HASH=5771a24149a3027144ef18f62a42b9a1a5c29c4c
+
+RUN CABAL_BUILD=/tmp/cabal_latest && \
+    mkdir -p $CABAL_BUILD/cabal && cd $CABAL_BUILD/cabal && \
+    git init && git remote add origin https://github.com/haskell/cabal.git && \
+    git fetch --depth 1 origin $CABAL_INSTANLL_RC_HASH && \
+    git checkout FETCH_HEAD && mkdir -p $CABAL_BUILD/bin && \
+    cabal update && cabal install --project-file=cabal.project.release --overwrite-policy=always --installdir=$CABAL_BUILD/bin cabal-install && \
+    cp $CABAL_BUILD/bin/cabal /usr/local/bin/cabal-3.5 && \
+    rm -rf $CABAL_BUILD
+
+# ------------------------------------------------------------------------------
+# Install hsthrift
+
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/pkgconfig/ /usr/local/lib/pkgconfig/
+COPY external/hsthrift/ /hsthrift/
+COPY requirements/ /tmp/requirements/
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+      $(cat /tmp/requirements/ubuntu-focal.txt) && \
+    rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
+
+RUN export EXE_COMPONENT=thrift-compiler && \
+    cd /hsthrift && make thrift-cpp && \
+    cabal-3.5 update && cabal-3.5 build exe:$EXE_COMPONENT && \
+    cp $(cabal-3.5 exec -- which $EXE_COMPONENT | grep $EXE_COMPONENT) /usr/local/bin/ && \
+    rm -rf /hsthrift /root/.cabal
+
+# ------------------------------------------------------------------------------
+
+FROM ubuntu:focal
+
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
+
+CMD ["bash"]
+
+# vim: set ft=dockerfile:
