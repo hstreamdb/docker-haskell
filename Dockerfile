@@ -25,6 +25,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         curl \
         g++ \
         ghc-${GHC} \
+        ghc-${GHC}-prof \
         git \
         libsqlite3-dev \
         libtinfo-dev \
