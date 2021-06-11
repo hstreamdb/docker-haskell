@@ -98,6 +98,7 @@ RUN if [ -n "$STACK" ]; then  \
     rm -rf "$GNUPGHOME" /var/lib/apt/lists/* /stack.tar.gz.asc /stack.tar.gz ; \
     fi
 
+ENV LANG C.UTF-8
 CMD ["ghci"]
 
 # vim: set ft=dockerfile:
