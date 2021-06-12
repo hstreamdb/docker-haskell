@@ -30,6 +30,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         libsqlite3-dev \
         libtinfo-dev \
         make \
+        cmake \
         netbase \
         openssh-client \
         xz-utils \
