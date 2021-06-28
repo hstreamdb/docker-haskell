@@ -66,10 +66,8 @@ RUN apt-get update && \
 
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
-RUN ln -sr /usr/local/lib/librocksdb.so.6.6.1 /usr/local/lib/librocksdb.so.6 && \
-    ln -sr /usr/local/lib/librocksdb.so.6.6.1 /usr/local/lib/librocksdb.so
-COPY --from=hstreamdb/logdevice-client:latest /usr/lib/libjemalloc* /usr/lib/
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/pkgconfig/ /usr/local/lib/pkgconfig/
+COPY --from=hstreamdb/logdevice-client:latest /usr/lib/libjemalloc.so.2 /usr/lib/
+RUN ln -sr /usr/lib/libjemalloc.so.2 /usr/lib/libjemalloc.so
 
 # ------------------------------------------------------------------------------
 # Install fbthrift
@@ -80,7 +78,7 @@ COPY --from=hstreamdb/hsthrift:latest /usr/local/bin/thrift-compiler /usr/local/
 # ------------------------------------------------------------------------------
 # Install stack
 
-ARG STACK=2.5.1
+ARG STACK=2.7.1
 ARG STACK_KEY=C5705533DA4F78D8664B5DC0575159689BEFB442
 ARG STACK_RELEASE_KEY=2C6A674E85EE3FB896AFC9B965101FF31C5C154D
 
