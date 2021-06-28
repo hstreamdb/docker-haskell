@@ -28,7 +28,7 @@ jobs:
           ghc_version="${image_tags[0]}"
           image_tag="${ghc_version}"
           docker pull $IMAGE_NAME:${image_tag} || true
-          DOCKER_BUILDKIT=1 docker build . -f Dockerfile --build-arg GHC=${ghc_version} --tag $IMAGE_NAME:${image_tag}
+          DOCKER_BUILDKIT=1 docker build . -f Dockerfile --build-arg GHC=${ghc_version} --build-arg STACK="" --tag $IMAGE_NAME:${image_tag}
 
           if [ "${{ github.event_name }}" == 'push' ]; then
             if [ "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
