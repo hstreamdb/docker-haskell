@@ -27,13 +27,16 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         ghc-${GHC} \
         ghc-${GHC}-prof \
         git \
+        vim \
         libsqlite3-dev \
         libtinfo-dev \
         make \
         cmake \
         netbase \
+        bash-completion \
         openssh-client \
         xz-utils \
+        libstatgrab-dev \
         zlib1g-dev && \
     rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
 
