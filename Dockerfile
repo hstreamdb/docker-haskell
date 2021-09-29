@@ -34,6 +34,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         netbase \
         openssh-client \
         xz-utils \
+        libstatgrab-dev \
         zlib1g-dev && \
     rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
 
