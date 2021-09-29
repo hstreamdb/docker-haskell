@@ -47,15 +47,15 @@ repository $CABAL_MIRROR_NAME \n\
   url: $CABAL_MIRROR_URL \n\
 " > /root/.cabal/config && cabal user-config update
 
-ARG CABAL_INSTANLL_RC_HASH=5771a24149a3027144ef18f62a42b9a1a5c29c4c
+ARG CABAL_INSTANLL_TAG=Cabal-v3.6.1.0
 
 RUN CABAL_BUILD=/tmp/cabal_latest && \
     mkdir -p $CABAL_BUILD/cabal && cd $CABAL_BUILD/cabal && \
     git init && git remote add origin https://github.com/haskell/cabal.git && \
-    git fetch --depth 1 origin $CABAL_INSTANLL_RC_HASH && \
+    git fetch --depth 1 origin $CABAL_INSTANLL_TAG && \
     git checkout FETCH_HEAD && mkdir -p $CABAL_BUILD/bin && \
     cabal update && cabal install --project-file=cabal.project.release --overwrite-policy=always --installdir=$CABAL_BUILD/bin cabal-install && \
-    cp $CABAL_BUILD/bin/cabal /usr/local/bin/cabal-3.5 && \
+    cp $CABAL_BUILD/bin/cabal /usr/local/bin/cabal-3.6 && \
     rm -rf $CABAL_BUILD
 
 # ------------------------------------------------------------------------------
@@ -75,8 +75,8 @@ RUN apt-get update && \
 
 RUN export EXE_COMPONENT=thrift-compiler && \
     cd /hsthrift && make thrift-cpp && \
-    cabal-3.5 update && cabal-3.5 build exe:$EXE_COMPONENT && \
-    cp $(cabal-3.5 exec -- which $EXE_COMPONENT | grep $EXE_COMPONENT) /usr/local/bin/ && \
+    cabal-3.6 update && cabal-3.6 build exe:$EXE_COMPONENT && \
+    cp $(cabal-3.6 exec -- which $EXE_COMPONENT | grep $EXE_COMPONENT) /usr/local/bin/ && \
     rm -rf /hsthrift /root/.cabal
 
 # ------------------------------------------------------------------------------

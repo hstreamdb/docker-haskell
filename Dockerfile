@@ -47,10 +47,10 @@ ENV PKG_CONFIG_PATH /usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 # ------------------------------------------------------------------------------
 # Install latest cabal
 
-COPY --from=hstreamdb/hsthrift /usr/local/bin/cabal-3.5 /usr/local/bin/cabal-3.5
-RUN update-alternatives --install /opt/cabal/bin/cabal opt-cabal /usr/local/bin/cabal-3.5 30401 \
-      --slave /opt/ghc/bin/cabal opt-ghc-cabal /usr/local/bin/cabal-3.5 && \
-    update-alternatives --set opt-cabal /usr/local/bin/cabal-3.5
+COPY --from=hstreamdb/hsthrift /usr/local/bin/cabal-3.6 /usr/local/bin/cabal-3.6
+RUN update-alternatives --install /opt/cabal/bin/cabal opt-cabal /usr/local/bin/cabal-3.6 30401 \
+      --slave /opt/ghc/bin/cabal opt-ghc-cabal /usr/local/bin/cabal-3.6 && \
+    update-alternatives --set opt-cabal /usr/local/bin/cabal-3.6
 
 # ------------------------------------------------------------------------------
 # Install grpc-dev library
