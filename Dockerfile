@@ -56,6 +56,7 @@ RUN update-alternatives --install /opt/cabal/bin/cabal opt-cabal /usr/local/bin/
 # Install grpc-dev library
 
 COPY --from=hstreamdb/grpc:1.35.0 /usr/local/include/ /usr/local/include/
+COPY --from=hstreamdb/grpc:1.35.0 /usr/local/bin/ /usr/local/bin/
 COPY --from=hstreamdb/grpc:1.35.0 /usr/local/lib/ /usr/local/lib/
 
 # ------------------------------------------------------------------------------
