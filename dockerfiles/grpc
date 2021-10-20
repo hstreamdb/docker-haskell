@@ -1,0 +1,34 @@
+# docker build . -f Dockerfile.grpc -t hstreamdb/grpc:1.35.0
+
+FROM ubuntu:focal as builder
+
+RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
+      build-essential autoconf libtool libssl-dev pkg-config cmake
+
+COPY ./extern/grpc /grpc
+
+ARG PARALLEL
+
+RUN mkdir -p /build /release && cd /build && \
+    cmake -DCMAKE_INSTALL_PREFIX=/release \
+          -DBUILD_SHARED_LIBS=ON \
+          -DgRPC_INSTALL=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DgRPC_SSL_PROVIDER=package \
+          /grpc \
+    && make -j ${PARALLEL:-$(nproc)} \
+    && make install -j${PARALLEL:-$(nproc)}
+
+RUN rm -rf /var/lib/apt/lists/* /build /grpc && apt-get clean
+
+
+FROM ubuntu:focal
+
+COPY --from=builder /release/ /usr/local/
+
+ENV PATH="$PATH:/usr/local/bin"
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+CMD /bin/bash
+
+# vim: set ft=dockerfile:
