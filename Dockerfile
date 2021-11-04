@@ -18,7 +18,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
     gpg --batch --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_KEY} && \
     gpg --batch --armor --export ${UBUNTU_KEY} > /etc/apt/trusted.gpg.d/haskell.org.gpg.asc && \
     gpgconf --kill all && \
-    echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu bionic main' > /etc/apt/sources.list.d/ghc.list && \
+    echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu focal main' > /etc/apt/sources.list.d/ghc.list && \
     apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
         cabal-install-${CABAL_INSTALL} \
