@@ -3,7 +3,7 @@ name: publish
 on:
   push:
     tags:
-      - '*'
+      - "*"
     branches:
       - release
 
@@ -13,12 +13,30 @@ env:
   IMAGE_NAME: hstreamdb/haskell
 
 jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check-if-skip.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: check-if-skip
+        run: |
+          if sha256sum -c ghc.sha256sum --status; then
+            echo "::set-output name=skip::true"
+          else
+            echo "::set-output name=skip::false"
+          fi
+
   build:
+    needs: init
+    if: ${{ needs.init.outputs.skip == 'false' }}
     name: Docker build
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ['8.6.5:8.6', '8.8.4:8.8', '8.10.4:8.10:latest', '9.0.1:9.0']
+        ghc: ["8.6.5:8.6", "8.8.4:8.8", "8.10.4:8.10:latest", "9.0.1:9.0"]
     steps:
       - uses: actions/checkout@v2
 
@@ -44,11 +62,12 @@ jobs:
           fi
 
   build-stable:
+    if: ${{ false }} # disable for now
     name: Docker build stable
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ['8.6.5:8.6', '8.8.4:8.8', '8.10.4:8.10:latest']
+        ghc: ["8.6.5:8.6", "8.8.4:8.8", "8.10.4:8.10:latest"]
     steps:
       - uses: actions/checkout@v2
 
