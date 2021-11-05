@@ -1,0 +1,61 @@
+# ------------------------------------------------------------------------------
+# Build ghc from source
+#
+# See also: https://github.com/haskell/docker-haskell/
+# ------------------------------------------------------------------------------
+
+ARG GHC_VER=9.2.1
+
+FROM ghcr.io/hstreamdb/ghc-builder:${GHC_VER} as builder
+
+ENV PATH /opt/ghc/bin:/opt/ghc/bin:$PATH
+
+ARG GHC_VER
+
+RUN cd /home/ghc/ghc && ./boot && ./configure && \
+    ./hadrian/build --flavour=perf binary-dist-dir -j$(nproc) && \
+    DIST_DIR=$(find _build/bindist/ -mindepth 1 -maxdepth 1 -type d -print -quit) && \
+    cd $DIST_DIR && ./configure --prefix /opt/ghc/$GHC_VER && \
+    sudo make install && sudo rm -rf /opt/ghc/$GHC_VER/share/ && \
+    CABAL_INSTALL_DIR=$(mktemp -d) && cd /home/ghc/cabal && cabal update && \
+    cabal install --project-file=cabal.project.release --overwrite-policy=always --installdir=$CABAL_INSTALL_DIR/bin cabal-install && \
+    sudo cp $CABAL_INSTALL_DIR/bin/cabal /usr/local/bin/cabal && \
+    rm -rf $CABAL_INSTALL_DIR
+
+# -----------------------------------------------------------------------------
+
+FROM ubuntu:focal
+
+ENV LANG C.UTF-8
+
+# common dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        gcc \
+        gnupg \
+        g++ \
+        libc6-dev \
+        libffi-dev \
+        libgmp-dev \
+        libsqlite3-dev \
+        libtinfo-dev \
+        make \
+        netbase \
+        openssh-client \
+        xz-utils \
+        zlib1g-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG GHC_VER
+
+COPY --from=builder /usr/local/bin/cabal /usr/local/bin/cabal
+COPY --from=builder /opt/ghc/${GHC_VER}/ /opt/ghc/${GHC_VER}/
+
+ENV PATH /opt/ghc/${GHC_VER}/bin:/usr/local/bin:/root/.cabal/bin:/root/.local/bin:$PATH
+
+CMD ["ghci"]
+
+# vim: set ft=dockerfile:

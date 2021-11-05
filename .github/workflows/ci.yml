@@ -21,13 +21,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - id: check-if-skip
-        run: |
-          if sha256sum -c ghc.sha256sum --status; then
-            echo "::set-output name=skip::true"
-          else
-            echo "::set-output name=skip::false"
-          fi
+      - name: check-if-skip
+        id: check-if-skip
+        uses: ./.github/actions/check-if-skip
+        with:
+          checksum-file: checksum/haskell.sha256sum
 
   build:
     needs: init

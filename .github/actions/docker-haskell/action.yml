@@ -1,0 +1,57 @@
+name: "docker-haskell"
+description: ""
+
+inputs:
+  image-name:
+    description: "image-name"
+    required: true
+  dockerfile:
+    description: "dockerfile"
+    required: true
+  ghc:
+    description: "format: build_arg:docker_tag:[docker_tag_alias...]"
+    required: true
+  cabal:
+    description: "format: build_arg:docker_tag:[docker_tag_alias...]"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        IFS=':' read -ra ghc_tags < <(echo "${{ inputs.ghc }}")
+        IFS=':' read -ra cabal_tags < <(echo "${{ inputs.cabal }}")
+        ghc_git_tag="${ghc_tags[0]}"
+        cabal_git_tag="${cabal_tags[0]}"
+        image_tag="${ghc_tags[1]}"
+        [ -n "${cabal_tags[1]}" ] && image_tag="${ghc_tags[1]}_${cabal_tags[1]}"
+
+        IMAGE_NAME=${{ inputs.image-name }}
+
+        DOCKER_BUILDKIT=1 docker build . -f ${{ inputs.dockerfile }} \
+            --build-arg GHC=${ghc_git_tag} \
+            --build-arg CABAL=${cabal_git_tag} \
+            --tag $IMAGE_NAME:${image_tag}
+
+        echo "Try pushing: $IMAGE_NAME:${image_tag}..."
+        if [ "${{ github.event_name }}" == 'push' ]; then
+          docker push $IMAGE_NAME:${image_tag}
+        else
+          echo "Ignoring."
+        fi
+
+        for (( i = 2; i < ${#ghc_tags[*]}; ++i )); do
+            ghc_tag_="${ghc_tags[i]}"
+            cabal_tag_="${cabal_tags[i]}"
+            alias_tag="${ghc_tag_}"
+            [ -n "${cabal_tag_}" ] && alias_tag="${ghc_tag_}_${cabal_tag_}"
+
+            echo "Try pushing alias: $IMAGE_NAME:${alias_tag}..."
+            if [ "${{ github.event_name }}" == 'push' ]; then
+              docker tag $IMAGE_NAME:$image_tag $IMAGE_NAME:$alias_tag
+              docker push $IMAGE_NAME:$alias_tag
+            else
+              echo "Ignoring."
+            fi
+        done
+      shell: bash

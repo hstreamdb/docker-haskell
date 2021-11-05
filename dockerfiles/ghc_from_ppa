@@ -1,0 +1,82 @@
+# ------------------------------------------------------------------------------
+# Install ghc from ubuntu ppa
+#
+# See also: https://github.com/haskell/docker-haskell/
+# ------------------------------------------------------------------------------
+FROM ubuntu:focal as base
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG UBUNTU_KEY=063DAB2BDC0B3F9FCEBC378BFF3AEACEF6F88286
+
+RUN export GNUPGHOME="$(mktemp -d)" && \
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys ${UBUNTU_KEY} && \
+    gpg --batch --armor --export ${UBUNTU_KEY} > /etc/apt/trusted.gpg.d/haskell.org.gpg.asc && \
+    gpgconf --kill all && \
+    echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu focal main' > /etc/apt/sources.list.d/ghc.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+        curl \
+        g++ \
+        git \
+        libsqlite3-dev \
+        libtinfo-dev \
+        make \
+        cmake \
+        netbase \
+        openssh-client \
+        xz-utils \
+        zlib1g-dev && \
+    rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
+
+# ------------------------------------------------------------------------------
+# Build cabal from source
+
+FROM base as build_cabal
+
+ARG BASE_GHC=8.10.4
+ARG BASE_CABAL=3.4
+
+ARG CABAL=Cabal-v3.6.2.0
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+        ghc-${BASE_GHC} cabal-install-${BASE_CABAL} && \
+    rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
+
+# Required to find ghc
+ENV PATH /opt/ghc/bin:/opt/cabal/bin:$PATH
+
+RUN export CABAL_BUILD=$(mktemp -d) && \
+    export CABAL_RELEASE=$(mktemp -d) && \
+    cd $CABAL_BUILD && \
+    git init && git remote add origin https://github.com/haskell/cabal.git && \
+    git fetch --depth 1 origin $CABAL && git checkout FETCH_HEAD && \
+    cabal update && \
+    cabal install --project-file=cabal.project.release \
+        --overwrite-policy=always --installdir=$CABAL_RELEASE cabal-install && \
+    cp $CABAL_RELEASE/cabal /usr/local/bin/cabal && \
+    rm -rf $CABAL_BUILD
+
+# ------------------------------------------------------------------------------
+
+FROM base
+
+ARG GHC=8.10.4
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+        ghc-${GHC} ghc-${GHC}-prof && \
+    rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
+
+# Install cabal
+COPY --from=build_cabal /usr/local/bin/cabal /usr/local/bin/cabal
+
+ENV LANG C.UTF-8
+ENV PATH /root/.cabal/bin:/root/.local/bin:/usr/local/bin:/opt/ghc/bin:$PATH
+
+CMD ["ghci"]
+
+# vim: set ft=dockerfile:
