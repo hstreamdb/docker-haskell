@@ -1,0 +1,81 @@
+# docker build . -f dockerfiles/ghc-builder -t hstreamdb/ghc-builder
+FROM ubuntu:focal
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gnupg ca-certificates dirmngr && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG BASE_GHC=8.10.4
+ARG GHC_UBUNTU_KEY=063DAB2BDC0B3F9FCEBC378BFF3AEACEF6F88286
+ARG BASE_CABAL=3.4
+
+RUN export GNUPGHOME="$(mktemp -d)" && \
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys ${GHC_UBUNTU_KEY} && \
+    gpg --batch --armor --export ${GHC_UBUNTU_KEY} > /etc/apt/trusted.gpg.d/haskell.org.gpg.asc && \
+    gpgconf --kill all && \
+    echo 'deb http://ppa.launchpad.net/hvr/ghc/ubuntu focal main' > /etc/apt/sources.list.d/ghc.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+        build-essential \
+        autoconf \
+        libgmp-dev \
+        libncurses-dev \
+        cabal-install-${BASE_CABAL} \
+        curl \
+        g++ \
+        ghc-${BASE_GHC} \
+        ghc-${BASE_GHC}-prof \
+        git \
+        vim-tiny \
+        libsqlite3-dev \
+        libtinfo-dev \
+        make \
+        automake \
+        libtool \
+        libncurses-dev \
+        cmake \
+        sudo \
+        netbase \
+        bash-completion \
+        openssh-client \
+        python3 \
+        xz-utils \
+        zlib1g-dev  \
+        # document \
+        python3-sphinx \
+        texlive-xetex \
+        texlive-fonts-recommended \
+        fonts-lmodern \
+        texlive-latex-recommended \
+        texlive-latex-extra \
+        && \
+    rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
+
+ENV LANG     C.UTF-8
+ENV LC_ALL   C.UTF-8
+ENV LANGUAGE C.UTF-8
+
+RUN useradd -m -d /home/ghc -s /bin/bash ghc
+RUN echo "ghc ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/ghc && chmod 0440 /etc/sudoers.d/ghc
+ENV HOME /home/ghc
+WORKDIR /home/ghc
+USER ghc
+
+ARG GHC_TAG=ghc-8.10.7-release
+ARG CABAL_TAG=Cabal-3.6.2.0
+
+ENV PATH /opt/ghc/bin:/opt/cabal/bin:/home/ghc/.cabal/bin:home/ghc/.local/bin:$PATH
+
+RUN cabal update && cabal install alex happy && \
+    GHC_BUILD=/home/ghc/ghc && \
+    mkdir -p $GHC_BUILD && cd $CABAL_BUILD && \
+    git init && git remote add origin https://gitlab.haskell.org/ghc/ghc.git && \
+    git fetch --depth 1 origin $GHC_TAG && \
+    git checkout FETCH_HEAD && git submodule update --init && \
+    CABAL_BUILD=/home/ghc/cabal && \
+    mkdir -p $CABAL_BUILD && cd $CABAL_BUILD && \
+    git init && git remote add origin https://github.com/haskell/cabal.git && \
+    git fetch --depth 1 origin $CABAL_TAG && \
+    git checkout FETCH_HEAD
+
+# vim: set ft=dockerfile:

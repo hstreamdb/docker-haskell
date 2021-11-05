@@ -1,0 +1,2 @@
+fdad47019c0a0c9f200cf029f1e4f4ce9946704eb332d50f4cff7ca17382292b  dockerfiles/ghc-builder
+4242424942cca0db50981f1ae48c2c8c183c2ae31fa79ad4e54796e1991358ac  .github/workflows/ci_ghc_builder.yml

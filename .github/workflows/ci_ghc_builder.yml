@@ -1,0 +1,73 @@
+name: ci_ghc_builder
+
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - release
+
+  pull_request:
+
+env:
+  IMAGE_NAME: ghcr.io/hstreamdb/ghc-builder
+
+jobs:
+  build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # git_tag:docker_tag:[docker_tag_alias...]
+        ghc: ["ghc-8.10.7-release:ghc-8.10.7:8.10", "ghc-9.2.1-release:ghc-9.2.1:9.2"]
+        cabal: ["Cabal-v3.6.2.0:cabal-3.6.2"]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Push images
+        run: |
+          if sha256sum -c ghc_builder.sha256sum --status; then
+            echo "Ingoring..."
+            exit 0
+          fi
+
+          IFS=':' read -ra ghc_tags < <(echo "${{ matrix.ghc }}")
+          IFS=':' read -ra cabal_tags < <(echo "${{ matrix.cabal }}")
+          ghc_git_tag="${ghc_tags[0]}"
+          cabal_git_tag="${cabal_tags[0]}"
+          image_tag="${ghc_tags[1]}_${cabal_tags[1]}"
+          DOCKER_BUILDKIT=1 docker build . -f dockerfiles/ghc-builder \
+              --build-arg GHC_TAG=${ghc_git_tag} \
+              --build-arg CABAL_TAG=${cabal_git_tag} \
+              --tag $IMAGE_NAME:${image_tag}
+
+          echo "Try pushing: $IMAGE_NAME:${image_tag}..."
+          if [ "${{ github.event_name }}" == 'push' ]; then
+            docker push $IMAGE_NAME:${image_tag}
+          else
+            echo "Ignoring."
+          fi
+
+          for (( i = 2; i < ${#ghc_tags[*]}; ++i )); do
+              ghc_tag_="${ghc_tags[i]}"
+              cabal_tag_="${cabal_tags[i]}"
+              alias_tag="${ghc_tag_}"
+              if [ -n "${cabal_tag_}" ]; then
+                alias_tag="${ghc_tag_}_${cabal_tag_}"
+              fi
+
+              echo "Try pushing alias: $IMAGE_NAME:${alias_tag}..."
+              if [ "${{ github.event_name }}" == 'push' ]; then
+                docker tag $IMAGE_NAME:$image_tag $IMAGE_NAME:$alias_tag
+                docker push $IMAGE_NAME:$alias_tag
+              else
+                echo "Ignoring."
+              fi
+          done
