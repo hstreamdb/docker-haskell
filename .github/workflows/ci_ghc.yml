@@ -1,0 +1,92 @@
+name: ghc
+
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - release
+
+  pull_request:
+
+jobs:
+  init-ghc-builder:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check-if-skip.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: check-if-skip
+        id: check-if-skip
+        uses: ./.github/actions/check-if-skip
+        with:
+          checksum-file: checksum/ghc_builder.sha256sum
+
+  build-ghc-builder:
+    runs-on: ubuntu-latest
+    needs: init-ghc-builder
+    if: ${{ needs.init-ghc-builder.outputs.skip == 'false' }}
+    strategy:
+      matrix:
+        # git_tag:docker_tag:[docker_tag_alias...]
+        ghc: ["ghc-8.10.7-release:ghc-8.10.7:8.10.7:8.10", "ghc-9.2.1-release:ghc-9.2.1:9.2.1:9.2"]
+        cabal: ["Cabal-v3.6.2.0:cabal-3.6.2"]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build ghc-builder
+        uses: ./.github/actions/docker-haskell
+        with:
+          image-name: ghcr.io/hstreamdb/ghc-builder
+          dockerfile: dockerfiles/ghc-builder
+          ghc: ${{ matrix.ghc }}
+          cabal: ${{ matrix.cabal }}
+
+  init-ghc-ppa:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check-if-skip.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: check-if-skip
+        uses: ./.github/actions/check-if-skip
+        with:
+          checksum-file: checksum/ghc_from_ppa.sha256sum
+
+  build-ghc-ppa:
+    runs-on: ubuntu-latest
+    needs: init-ghc-ppa
+    if: ${{ needs.init-ghc-ppa.outputs.skip == 'false' }}
+    strategy:
+      matrix:
+        # docker_args:docker_tag:[docker_tag_alias...]
+        ghc: ["8.8.4:8.8.4:8.8", "8.10.4:8.10.4:8.10:latest", "9.0.1:9.0"]
+        cabal: ["Cabal-v3.6.2.0"]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build ghc-ppa
+        uses: ./.github/actions/docker-haskell
+        with:
+          image-name: ghcr.io/hstreamdb/ghc
+          dockerfile: dockerfiles/ghc_from_ppa
+          ghc: ${{ matrix.ghc }}
+          cabal: ${{ matrix.cabal }}

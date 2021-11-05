@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
       - id: check-if-skip
         run: |
-          if sha256sum -c grpc.sha256sum --status; then
+          if sha256sum -c checksum/grpc.sha256sum --status; then
             echo "::set-output name=skip::true"
           else
             echo "::set-output name=skip::false"

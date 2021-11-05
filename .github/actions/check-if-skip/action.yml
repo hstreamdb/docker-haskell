@@ -1,0 +1,24 @@
+name: 'check-if-skip'
+description: ''
+
+inputs:
+  checksum-file:
+    description: 'checksum-file'
+    required: true
+
+outputs:
+  skip:
+    description: "should skip?"
+    value: ${{ steps.check-if-skip.outputs.skip }}
+
+runs:
+  using: "composite"
+  steps:
+    - id: check-if-skip
+      run: |
+        if sha256sum -c ${{ inputs.checksum-file }} --status; then
+          echo "::set-output name=skip::true"
+        else
+          echo "::set-output name=skip::false"
+        fi
+      shell: bash
