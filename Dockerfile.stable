@@ -28,7 +28,6 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         curl \
         g++ \
         ghc-${GHC} \
-        golang \
         git \
         libsqlite3-dev \
         libtinfo-dev \

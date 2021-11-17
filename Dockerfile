@@ -26,7 +26,6 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         g++ \
         ghc-${GHC} \
         ghc-${GHC}-prof \
-        golang \
         git \
         vim \
         libsqlite3-dev \
@@ -79,6 +78,26 @@ RUN ln -sr /usr/lib/libjemalloc.so.2 /usr/lib/libjemalloc.so
 
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
 COPY --from=hstreamdb/hsthrift:latest /usr/local/bin/thrift-compiler /usr/local/bin/thrift-compiler
+
+# -------------------------------------------------------------------------------
+# Install protoc plugins
+
+ARG GO_PKG=go1.17.3.linux-amd64.tar.gz
+RUN curl -fSL https://golang.org/dl/"$GO_PKG" -o "$GO_PKG"   && \
+    rm -rf /usr/local/go && tar -C /usr/local -xzf "$GO_PKG" && \
+    rm -rf "$GO_PKG"
+ENV PATH=$PATH:/usr/local/go/bin
+ENV GOBIN=/usr/local/bin
+RUN go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest && \
+    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest    && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest                      && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+RUN mkdir -p /usr/local/include/google/api && \
+    mkdir -p /usr/local/include/protoc-gen-openapiv2/options
+RUN curl -fSL -o /usr/local/include/google/api/annotations.proto                   https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto                         && \
+    curl -fSL -o /usr/local/include/google/api/http.proto                          https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto                                && \
+    curl -fSL -o /usr/local/include/protoc-gen-openapiv2/options/annotations.proto https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/master/protoc-gen-openapiv2/options/annotations.proto && \
+    curl -fSL -o /usr/local/include/protoc-gen-openapiv2/options/openapiv2.proto   https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/master/protoc-gen-openapiv2/options/openapiv2.proto
 
 # ------------------------------------------------------------------------------
 # Install stack
