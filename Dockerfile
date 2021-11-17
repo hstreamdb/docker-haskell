@@ -26,6 +26,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         g++ \
         ghc-${GHC} \
         ghc-${GHC}-prof \
+        golang \
         git \
         vim \
         libsqlite3-dev \
