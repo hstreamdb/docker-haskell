@@ -26,6 +26,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         g++ \
         ghc-${GHC} \
         ghc-${GHC}-prof \
+        golang-1.14 \
         git \
         vim \
         libsqlite3-dev \
@@ -82,16 +83,13 @@ COPY --from=hstreamdb/hsthrift:latest /usr/local/bin/thrift-compiler /usr/local/
 # -------------------------------------------------------------------------------
 # Install protoc plugins
 
-ARG GO_PKG=go1.17.3.linux-amd64.tar.gz
-RUN curl -fSL https://golang.org/dl/"$GO_PKG" -o "$GO_PKG"   && \
-    rm -rf /usr/local/go && tar -C /usr/local -xzf "$GO_PKG" && \
-    rm -rf "$GO_PKG"
-ENV PATH=$PATH:/usr/local/go/bin
+RUN ln -sf /usr/lib/go-1.14/bin/go /usr/bin/go
 ENV GOBIN=/usr/local/bin
-RUN go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest && \
-    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest    && \
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest                      && \
-    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+ENV GO111MODULE=on
+RUN go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest && \
+    go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest    && \
+    go get -u google.golang.org/protobuf/cmd/protoc-gen-go@latest                      && \
+    go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 RUN mkdir -p /usr/local/include/google/api && \
     mkdir -p /usr/local/include/protoc-gen-openapiv2/options
 RUN curl -fSL -o /usr/local/include/google/api/annotations.proto                   https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto                         && \
