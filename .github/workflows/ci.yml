@@ -36,11 +36,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ["8.6.5:8.6", "8.8.4:8.8", "8.10.4:8.10:latest", "9.0.1:9.0"]
+        ghc: ["8.8.4:8.8", "8.10.4:8.10:latest", "9.0.1:9.0"]
     steps:
       - uses: actions/checkout@v2
 
-      - name: Build & Push images
+      - name: build & push images
         run: |
           IFS=':' read -ra image_tags < <(echo "${{ matrix.ghc }}")
           ghc_version="${image_tags[0]}"
@@ -55,38 +55,6 @@ jobs:
               for tag in "${image_tags[@]:1}"; do
                 docker tag $IMAGE_NAME:$image_tag $IMAGE_NAME:$tag
                 docker push $IMAGE_NAME:$tag
-              done
-            else
-              echo "No such secrets, ignored."
-            fi
-          fi
-
-  build-stable:
-    if: ${{ false }} # disable for now
-    name: Docker build stable
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ghc: ["8.6.5:8.6", "8.8.4:8.8", "8.10.4:8.10:latest"]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Build & Push images
-        run: |
-          IFS=':' read -ra image_tags < <(echo "${{ matrix.ghc }}")
-          ghc_version="${image_tags[0]}"
-          image_tag="${ghc_version}"
-          image_tag_stable="${image_tag}-stable"
-          docker pull $IMAGE_NAME:${image_tag_stable} || true
-          docker build . -f Dockerfile.stable --build-arg GHC=${ghc_version} --tag $IMAGE_NAME:${image_tag_stable}
-
-          if [ "${{ github.event_name }}" == 'push' ]; then
-            if [ "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
-              echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-              docker push hstreamdb/haskell:${image_tag_stable}
-              for tag in "${image_tags[@]:1}"; do
-                docker tag $IMAGE_NAME:$image_tag_stable $IMAGE_NAME:${tag}-stable
-                docker push $IMAGE_NAME:${tag}-stable
               done
             else
               echo "No such secrets, ignored."
