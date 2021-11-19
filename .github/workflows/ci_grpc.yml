@@ -1,0 +1,58 @@
+name: grpc
+
+on:
+  push:
+    tags:
+      - '*'
+    branches:
+      - release
+
+  pull_request:
+
+env:
+  IMAGE_NAME: ghcr.io/hstreamdb/grpc
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check-if-skip.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: check-if-skip
+        run: |
+          if sha256sum -c grpc.sha256sum --status; then
+            echo "::set-output name=skip::true"
+          else
+            echo "::set-output name=skip::false"
+          fi
+
+  build:
+    needs: init
+    if: ${{ needs.init.outputs.skip == 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
+
+      - name: login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build & push images
+        run: |
+          image_tag=1.35.0
+          docker build . -f dockerfiles/grpc -t $IMAGE_NAME:${image_tag}
+
+          echo "Try pushing: $IMAGE_NAME:${image_tag}..."
+          if [ "${{ github.event_name }}" == 'push' ]; then
+            docker push $IMAGE_NAME:${image_tag}
+          else
+            echo "Ignoring."
+          fi
