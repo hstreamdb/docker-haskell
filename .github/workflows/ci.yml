@@ -32,7 +32,6 @@ jobs:
   build:
     needs: init
     if: ${{ needs.init.outputs.skip == 'false' }}
-    name: Docker build
     runs-on: ubuntu-latest
     strategy:
       matrix:
