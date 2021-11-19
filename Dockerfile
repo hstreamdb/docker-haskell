@@ -39,6 +39,8 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         xz-utils \
         libstatgrab-dev \
         zlib1g-dev && \
+    ln -s /usr/lib/go-1.14/bin/go /usr/bin/go && \
+    ln -s /usr/lib/go-1.14/bin/gofmt /usr/bin/gofmt && \
     rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 ENV PATH /root/.cabal/bin:/root/.local/bin:/usr/local/bin:/opt/cabal/bin:/opt/ghc/bin:$PATH
