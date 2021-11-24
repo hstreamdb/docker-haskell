@@ -79,7 +79,7 @@ RUN ln -sr /usr/lib/libjemalloc.so.2 /usr/lib/libjemalloc.so
 # ------------------------------------------------------------------------------
 # Install fbthrift
 
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
+COPY --from=hstreamdb/hsthrift:latest /usr/local/bin/thrift1 /usr/local/bin/thrift1
 COPY --from=hstreamdb/hsthrift:latest /usr/local/bin/thrift-compiler /usr/local/bin/thrift-compiler
 
 # ------------------------------------------------------------------------------
