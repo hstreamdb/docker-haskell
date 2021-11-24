@@ -71,7 +71,7 @@ jobs:
     strategy:
       matrix:
         # docker_args:docker_tag:[docker_tag_alias...]
-        ghc: ["8.8.4:8.8.4:8.8", "8.10.4:8.10.4:8.10:latest", "9.0.1:9.0"]
+        ghc: ["8.8.4:8.8.4:8.8", "9.0.1:9.0.1:9.0", "8.10.4:8.10.4:8.10:latest"]
         cabal: ["Cabal-v3.6.2.0"]
     steps:
       - uses: actions/checkout@v2

@@ -25,6 +25,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         libtinfo-dev \
         make \
         cmake \
+        pkg-config \
         netbase \
         openssh-client \
         xz-utils \

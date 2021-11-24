@@ -32,11 +32,12 @@ ENV LANG C.UTF-8
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
+        gnupg \
         curl \
         git \
         gcc \
-        gnupg \
         g++ \
+        pkg-config \
         libc6-dev \
         libffi-dev \
         libgmp-dev \
