@@ -35,8 +35,8 @@ RUN apt-get update && \
         gnupg \
         curl \
         git \
-        gcc \
-        g++ \
+        gcc-10 \
+        g++-10 \
         pkg-config \
         libc6-dev \
         libffi-dev \
@@ -48,6 +48,8 @@ RUN apt-get update && \
         openssh-client \
         xz-utils \
         zlib1g-dev && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20 && \
     rm -rf /var/lib/apt/lists/*
 
 ARG GHC_VER
