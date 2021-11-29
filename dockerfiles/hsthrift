@@ -1,4 +1,4 @@
-FROM ghcr.io/hstreamdb/ghc:8.10 as builder
+FROM ghcr.io/hstreamdb/ghc:8.10.4 as builder
 
 # ------------------------------------------------------------------------------
 # Install hsthrift
@@ -6,17 +6,16 @@ FROM ghcr.io/hstreamdb/ghc:8.10 as builder
 ENV LD_LIBRARY_PATH /usr/local/lib:$LD_LIBRARY_PATH
 ENV PKG_CONFIG_PATH /usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/pkgconfig/ /usr/local/lib/pkgconfig/
-COPY external/hsthrift/ /hsthrift/
 COPY requirements/ /tmp/requirements/
-
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
       $(cat /tmp/requirements/ubuntu-focal.txt) && \
     rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
+
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
+COPY external/hsthrift/ /hsthrift/
 
 RUN export EXE_COMPONENT=thrift-compiler && \
     cabal update && \
@@ -29,7 +28,7 @@ RUN export EXE_COMPONENT=thrift-compiler && \
 
 FROM ubuntu:focal
 
-COPY --from=builder /usr/local/bin/ /usr/local/bin/
+COPY --from=builder /usr/local/bin/thrift-compiler /usr/local/bin/thrift-compiler
 
 CMD ["bash"]
 
