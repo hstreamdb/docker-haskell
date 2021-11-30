@@ -46,6 +46,7 @@ RUN apt-get update && \
         make \
         netbase \
         openssh-client \
+        bash-completion \
         xz-utils \
         zlib1g-dev && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 && \

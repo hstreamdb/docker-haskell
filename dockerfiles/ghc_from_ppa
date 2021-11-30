@@ -29,6 +29,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         pkg-config \
         netbase \
         openssh-client \
+        bash-completion \
         xz-utils \
         zlib1g-dev && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 && \
@@ -63,7 +64,9 @@ RUN export CABAL_BUILD=$(mktemp -d) && \
     cabal install --project-file=cabal.project.release \
         --overwrite-policy=always --installdir=$CABAL_RELEASE cabal-install && \
     cp $CABAL_RELEASE/cabal /usr/local/bin/cabal && \
-    rm -rf $CABAL_BUILD
+    mkdir -p /etc/bash_completion.d/ && \
+    cp $CABAL_BUILD/cabal-install/bash-completion/cabal /etc/bash_completion.d/cabal && \
+    rm -rf $CABAL_BUILD $CABAL_RELEASE
 
 # ------------------------------------------------------------------------------
 
@@ -81,6 +84,7 @@ RUN apt-get update && \
 
 # Install cabal
 COPY --from=build_cabal /usr/local/bin/cabal /usr/local/bin/cabal
+COPY --from=build_cabal /etc/bash_completion.d/cabal /etc/bash_completion.d/cabal
 
 ENV LANG C.UTF-8
 ENV PATH /root/.cabal/bin:/root/.local/bin:/usr/local/bin:/opt/ghc/bin:$PATH
