@@ -14,11 +14,21 @@ inputs:
   cabal:
     description: "format: build_arg:docker_tag:[docker_tag_alias...]"
     required: true
+  kargs-key:
+    description: "format: arg_key1:arg_key2:..."
+    default: ""
+    required: false
+  kargs-value:
+    description: "format: arg_val1:arg_val2:..."
+    default: ""
+    required: false
 
 runs:
   using: "composite"
   steps:
     - run: |
+        set -x
+
         IFS=':' read -ra ghc_tags < <(echo "${{ inputs.ghc }}")
         IFS=':' read -ra cabal_tags < <(echo "${{ inputs.cabal }}")
         ghc_git_tag="${ghc_tags[0]}"
@@ -28,10 +38,17 @@ runs:
 
         IMAGE_NAME=${{ inputs.image-name }}
 
+        IFS=':' read -ra kargs_keys < <(echo "${{ inputs.kargs-key }}")
+        IFS=':' read -ra kargs_vals < <(echo "${{ inputs.kargs-value }}")
+        build_args=""
+        [ -n "$ghc_git_tag" ] && build_args="$build_args --build-arg GHC=${ghc_git_tag}"
+        [ -n "$cabal_git_tag" ] && build_args="$build_args --build-arg CABAL=${cabal_git_tag}"
+        for (( i = 0; i < ${#kargs_keys[*]}; ++i )); do
+          build_args="$build_args --build-arg ${kargs_keys[i]}=${kargs_vals[i]}"
+        done
+
         DOCKER_BUILDKIT=1 docker build . -f ${{ inputs.dockerfile }} \
-            --build-arg GHC=${ghc_git_tag} \
-            --build-arg CABAL=${cabal_git_tag} \
-            --tag $IMAGE_NAME:${image_tag}
+            $build_args --tag $IMAGE_NAME:${image_tag}
 
         echo "Try pushing: $IMAGE_NAME:${image_tag}..."
         if [ "${{ github.event_name }}" == 'push' ]; then

@@ -34,6 +34,7 @@ RUN export GNUPGHOME="$(mktemp -d)" && \
         zlib1g-dev && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 && \
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 20 && \
     update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 20 && \
     rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
 
@@ -79,6 +80,7 @@ RUN apt-get update && \
         ghc-${GHC} ghc-${GHC}-prof && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 && \
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 20 && \
     update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 20 && \
     rm -rf "$GNUPGHOME" && rm -rf /var/lib/apt/lists/* && apt-get clean
 

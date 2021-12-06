@@ -53,8 +53,6 @@ COPY --from=ghcr.io/hstreamdb/hsthrift:latest \
     /usr/local/bin/thrift-compiler \
     /usr/local/bin/thrift-compiler
 
-RUN update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 20
-
 ENV LANG C.UTF-8
 CMD ["ghci"]
 

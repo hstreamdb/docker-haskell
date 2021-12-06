@@ -33,6 +33,13 @@ jobs:
         # git_tag:docker_tag:[docker_tag_alias...]
         ghc: ["ghc-8.10.7-release:ghc-8.10.7:8.10.7:8.10", "ghc-9.2.1-release:ghc-9.2.1:9.2.1:9.2"]
         cabal: ["Cabal-v3.6.2.0:cabal-3.6.2"]
+        include:
+          - ghc: ghc-8.10.7-release:ghc-8.10.7:8.10.7:8.10
+            cabal: Cabal-v3.6.2.0:cabal-3.6.2
+            ghc_base: 8.10.4
+          - ghc: ghc-9.2.1-release:ghc-9.2.1:9.2.1:9.2
+            cabal: Cabal-v3.6.2.0:cabal-3.6.2
+            ghc_base: 8.10.4
     steps:
       - uses: actions/checkout@v2
 
@@ -50,6 +57,8 @@ jobs:
           dockerfile: dockerfiles/ghc-builder
           ghc: ${{ matrix.ghc }}
           cabal: ${{ matrix.cabal }}
+          kargs-key: BASE_GHC
+          kargs-value: ${{ matrix.ghc_base }}
 
   init-ghc-ppa:
     runs-on: ubuntu-latest
@@ -90,3 +99,42 @@ jobs:
           dockerfile: dockerfiles/ghc_from_ppa
           ghc: ${{ matrix.ghc }}
           cabal: ${{ matrix.cabal }}
+
+  init-ghc-src:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check-if-skip.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: check-if-skip
+        uses: ./.github/actions/check-if-skip
+        with:
+          checksum-file: checksum/ghc.sha256sum
+
+  build-ghc-src:
+    runs-on: ubuntu-latest
+    needs: init-ghc-src
+    if: ${{ needs.init-ghc-src.outputs.skip == 'false' }}
+    strategy:
+      matrix:
+        # docker_args:docker_tag:[docker_tag_alias...]
+        ghc: ["8.10.7:8.10.7", "9.2.1:9.2.1:9.2"]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build ghc-src
+        uses: ./.github/actions/docker-haskell
+        with:
+          image-name: ghcr.io/hstreamdb/ghc
+          dockerfile: dockerfiles/ghc
+          ghc: ${{ matrix.ghc }}
+          cabal: ""

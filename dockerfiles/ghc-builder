@@ -65,21 +65,27 @@ ENV HOME /home/ghc
 WORKDIR /home/ghc
 USER ghc
 
-ARG GHC=ghc-8.10.7-release
-ARG CABAL=Cabal-3.6.2.0
-
 ENV PATH /opt/ghc/bin:/opt/cabal/bin:/home/ghc/.cabal/bin:home/ghc/.local/bin:$PATH
 
-RUN cabal update && cabal install alex happy && \
-    GHC_BUILD=/home/ghc/ghc && \
+ARG GHC=ghc-8.10.7-release
+ARG CABAL=Cabal-v3.6.2.0
+
+RUN GHC_BUILD=/home/ghc/ghc && \
     mkdir -p $GHC_BUILD && cd $GHC_BUILD && \
     git init && git remote add origin https://gitlab.haskell.org/ghc/ghc.git && \
-    git fetch --depth 1 origin $GHC_TAG && \
+    git fetch --depth 1 origin $GHC && \
     git checkout FETCH_HEAD && git submodule update --init && \
+    if [ -f "./hadrian/build.sh" ]; then ln -sr ./hadrian/build.sh ./hadrian/build; fi && \
+    # Without this constraint ghc-8.10.7 will be built with QuickCheck=2.8, which \
+    # will lead to fail. \
+    echo -e "constraints:\n    QuickCheck >= 2.13" > ./hadrian/cabal.project.local && \
     CABAL_BUILD=/home/ghc/cabal && \
     mkdir -p $CABAL_BUILD && cd $CABAL_BUILD && \
     git init && git remote add origin https://github.com/haskell/cabal.git && \
-    git fetch --depth 1 origin $CABAL_TAG && \
+    git fetch --depth 1 origin $CABAL && \
     git checkout FETCH_HEAD
+
+RUN cabal update && cd /home/ghc/ghc && \
+    CABAL=/opt/cabal/bin/cabal GHC=/opt/ghc/bin/ghc ./hadrian/build --help
 
 # vim: set ft=dockerfile:

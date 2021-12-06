@@ -1,22 +1,28 @@
 # ------------------------------------------------------------------------------
-# Build ghc from source
+# Build ghc from source, e.g.
 #
-# See also: https://github.com/haskell/docker-haskell/
+# docker build . -f dockerfiles/ghc --build-arg GHC=8.10.7 -t ghcr.io/hstreamdb/ghc:8.10.7
 # ------------------------------------------------------------------------------
 
-ARG GHC_VER=9.2.1
+ARG GHC=9.2.1
 
-FROM ghcr.io/hstreamdb/ghc-builder:${GHC_VER} as builder
+FROM ghcr.io/hstreamdb/ghc-builder:${GHC} as builder
 
 ENV PATH /opt/ghc/bin:/opt/ghc/bin:$PATH
 
-ARG GHC_VER
+ARG GHC
 
-RUN cd /home/ghc/ghc && ./boot && ./configure && \
+RUN cd /home/ghc/ghc && cabal update && \
+    cabal --project-file="$PWD/hadrian/cabal.project" install happy alex && \
+    # Note: the "hadrian/build" script in ghc-9.2 source tree will try to read \
+    # "GHC" env as an alt ghc binary, here we must unset GHC ( GHC="${GHC:-ghc}" ) \
+    export _GHC_VER=$GHC && unset GHC && \
+    ./boot && ./configure && \
     ./hadrian/build --flavour=perf binary-dist-dir -j$(nproc) && \
+    export GHC=$_GHC_VER && unset _GHC_VER && \
     DIST_DIR=$(find _build/bindist/ -mindepth 1 -maxdepth 1 -type d -print -quit) && \
-    cd $DIST_DIR && ./configure --prefix /opt/ghc/$GHC_VER && \
-    sudo make install && sudo rm -rf /opt/ghc/$GHC_VER/share/ && \
+    cd $DIST_DIR && ./configure --prefix /opt/ghc/$GHC && \
+    sudo make install && sudo rm -rf /opt/ghc/$GHC/share/ && \
     CABAL_INSTALL_DIR=$(mktemp -d) && cd /home/ghc/cabal && cabal update && \
     cabal install --project-file=cabal.project.release --overwrite-policy=always --installdir=$CABAL_INSTALL_DIR/bin cabal-install && \
     sudo cp $CABAL_INSTALL_DIR/bin/cabal /usr/local/bin/cabal && \
@@ -51,15 +57,19 @@ RUN apt-get update && \
         zlib1g-dev && \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 && \
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 20 && \
     update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 20 && \
     rm -rf /var/lib/apt/lists/*
 
-ARG GHC_VER
+ARG GHC
 
 COPY --from=builder /usr/local/bin/cabal /usr/local/bin/cabal
-COPY --from=builder /opt/ghc/${GHC_VER}/ /opt/ghc/${GHC_VER}/
+COPY --from=builder /opt/ghc/${GHC}/ /opt/ghc/${GHC}/
+COPY --from=builder /home/ghc/cabal/cabal-install/bash-completion/cabal /etc/bash_completion.d/cabal
 
-ENV PATH /opt/ghc/${GHC_VER}/bin:/usr/local/bin:/root/.cabal/bin:/root/.local/bin:$PATH
+RUN ln -sr /opt/ghc/${GHC}/bin /opt/ghc/bin
+
+ENV PATH /opt/ghc/bin:/usr/local/bin:/root/.cabal/bin:/root/.local/bin:$PATH
 
 CMD ["ghci"]
 
