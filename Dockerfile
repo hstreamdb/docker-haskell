@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Install haskell toolkit with extra shared library used by hstreamdb.
+# Install haskell toolkit with extra shared libraries used by hstreamdb.
 #
 # See also: https://github.com/haskell/docker-haskell/
 # ------------------------------------------------------------------------------
@@ -11,10 +11,10 @@ RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
         vim \
         bash-completion \
-        golang-1.14-go \
+        golang-1.16-go \
         libstatgrab-dev && \
-    ln -s /usr/lib/go-1.14/bin/go /usr/bin/go && \
-    ln -s /usr/lib/go-1.14/bin/gofmt /usr/bin/gofmt && \
+    ln -s /usr/lib/go-1.16/bin/go /usr/bin/go && \
+    ln -s /usr/lib/go-1.16/bin/gofmt /usr/bin/gofmt && \
     grep -wq '^source /etc/profile.d/bash_completion.sh' /etc/bash.bashrc \
         || echo 'source /etc/profile.d/bash_completion.sh' >> /etc/bash.bashrc && \
     rm -rf /var/lib/apt/lists/*

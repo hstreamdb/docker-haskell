@@ -6,7 +6,7 @@ FROM ubuntu:focal as builder
 
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
       build-essential autoconf libtool libssl-dev pkg-config cmake \
-      golang-1.14-go git
+      golang-1.16-go git
 
 COPY ./external/grpc /deps/grpc
 
@@ -29,7 +29,7 @@ RUN export RELEASE_DIR=/release && \
     export GOBIN=$RELEASE_DIR/bin && \
     export GOPROXY=${GOPROXY_ENV} && \
     export GOPATH=/root/go && \
-    /usr/lib/go-1.14/bin/go get -u \
+    /usr/lib/go-1.16/bin/go get -u \
       github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.6.0 \
       github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.6.0 \
       google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
