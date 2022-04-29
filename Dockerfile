@@ -42,7 +42,10 @@ RUN apt-get update && \
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
 COPY --from=hstreamdb/logdevice-client:latest /usr/lib/libjemalloc.so.2 /usr/lib/
-RUN ln -sr /usr/lib/libjemalloc.so.2 /usr/lib/libjemalloc.so
+RUN ln -sr /usr/lib/libjemalloc.so.2 /usr/lib/libjemalloc.so && \
+    [ -f "/usr/local/include/thrift/lib/thrift/gen-cpp2/RpcMetadata_types.h" ] &&  \
+    # temporary fix of "cabal build --enable-profiling" \
+    sed -i '/^#pragma once/a #ifdef PROFILING\n#undef PROFILING\n#endif' /usr/local/include/thrift/lib/thrift/gen-cpp2/RpcMetadata_types.h
 
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
 
