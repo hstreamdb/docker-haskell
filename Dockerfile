@@ -17,7 +17,8 @@ RUN apt-get update && \
     ln -s /usr/lib/go-1.16/bin/gofmt /usr/bin/gofmt && \
     grep -wq '^source /etc/profile.d/bash_completion.sh' /etc/bash.bashrc \
         || echo 'source /etc/profile.d/bash_completion.sh' >> /etc/bash.bashrc && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    echo "root:toor" | chpasswd
 
 ENV PATH /root/.cabal/bin:/root/.local/bin:/usr/local/bin:/opt/cabal/bin:/opt/ghc/bin:$PATH
 ENV LD_LIBRARY_PATH /usr/local/lib:$LD_LIBRARY_PATH
