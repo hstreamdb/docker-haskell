@@ -60,6 +60,47 @@ jobs:
           kargs-key: BASE_GHC
           kargs-value: ${{ matrix.ghc_base }}
 
+  # ----------------------
+
+  init-ghc-haskell:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check-if-skip.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: check-if-skip
+        uses: ./.github/actions/check-if-skip
+        with:
+          checksum-file: checksum/ghc_haskell.sha256sum
+
+  build-ghc-haskell:
+    runs-on: ubuntu-latest
+    needs: init-ghc-haskell
+    if: ${{ needs.init-ghc-haskell.outputs.skip == 'false' }}
+    strategy:
+      matrix:
+        # docker_args:docker_tag:[docker_tag_alias...]
+        ghc: ["8.10.7:8.10.7"]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build
+        uses: ./.github/actions/docker-haskell
+        with:
+          image-name: ghcr.io/hstreamdb/ghc
+          dockerfile: dockerfiles/ghc_from_haskell
+          ghc: ${{ matrix.ghc }}
+          cabal: ""
+
   init-ghc-ppa:
     runs-on: ubuntu-latest
     outputs:
@@ -92,7 +133,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build ghc-ppa
+      - name: build
         uses: ./.github/actions/docker-haskell
         with:
           image-name: ghcr.io/hstreamdb/ghc
@@ -120,7 +161,7 @@ jobs:
     strategy:
       matrix:
         # docker_args:docker_tag:[docker_tag_alias...]
-        ghc: ["8.10.7:8.10.7", "9.2.1:9.2.1:9.2"]
+        ghc: ["9.2.1:9.2.1:9.2"]
     steps:
       - uses: actions/checkout@v2
 
@@ -131,7 +172,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build ghc-src
+      - name: build
         uses: ./.github/actions/docker-haskell
         with:
           image-name: ghcr.io/hstreamdb/ghc

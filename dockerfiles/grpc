@@ -1,4 +1,4 @@
-# docker build . -f dockerfiles/grpc -t hstreamdb/grpc:1.35.0
+# docker build . -f dockerfiles/grpc -t ghcr.io/hstreamdb/grpc:1.35.0
 #
 # ref: https://github.com/grpc/grpc/blob/master/BUILDING.md
 

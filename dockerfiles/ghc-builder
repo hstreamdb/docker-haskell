@@ -1,4 +1,4 @@
-# docker build . -f dockerfiles/ghc-builder -t hstreamdb/ghc-builder
+# docker build . -f dockerfiles/ghc-builder -t ghcr.io/hstreamdb/ghc-builder
 FROM ubuntu:focal
 
 RUN apt-get update && \
