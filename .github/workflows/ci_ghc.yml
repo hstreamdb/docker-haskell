@@ -73,7 +73,7 @@ jobs:
       - id: check-if-skip
         uses: ./.github/actions/check-if-skip
         with:
-          checksum-file: checksum/ghc_haskell.sha256sum
+          checksum-file: checksum/ghc_from_haskell.sha256sum
 
   build-ghc-haskell:
     runs-on: ubuntu-latest
@@ -82,7 +82,7 @@ jobs:
     strategy:
       matrix:
         # docker_args:docker_tag:[docker_tag_alias...]
-        ghc: ["8.10.7:8.10.7"]
+        ghc: ["8.10.7:8.10.7:8.10:latest"]
     steps:
       - uses: actions/checkout@v2
 
@@ -121,7 +121,7 @@ jobs:
     strategy:
       matrix:
         # docker_args:docker_tag:[docker_tag_alias...]
-        ghc: ["8.8.4:8.8.4:8.8", "9.0.1:9.0.1:9.0", "8.10.4:8.10.4:8.10:latest"]
+        ghc: ["8.8.4:8.8.4:8.8", "9.0.1:9.0.1:9.0", "8.10.4:8.10.4"]
         cabal: ["Cabal-v3.6.2.0"]
     steps:
       - uses: actions/checkout@v2
