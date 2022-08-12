@@ -1,0 +1,75 @@
+# See also: https://github.com/haskell/docker-haskell
+
+FROM ubuntu:focal
+
+ENV LANG C.UTF-8
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+        ca-certificates \
+        gnupg \
+        curl \
+        git \
+        gcc-10 \
+        g++-10 \
+        libc6-dev \
+        libffi-dev \
+        libgmp-dev \
+        libnuma-dev \
+        libsqlite3-dev \
+        libtinfo-dev \
+        make \
+        cmake \
+        netbase \
+        openssh-client \
+        bash-completion \
+        xz-utils \
+        zlib1g-dev && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 20 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 20 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 20 && \
+    update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 20 && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG CABAL_INSTALL=3.6.2.0
+ARG CABAL_INSTALL_RELEASE_KEY=A970DF3AC3B9709706D74544B3D9F94B8DCAE210
+# get from https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/SHA256SUMS
+ARG CABAL_INSTALL_RELEASE_SHA256=4759B56E9257E02F29FA374A6B25D6CB2F9D80C7E3A55D4F678A8E570925641C
+
+RUN cd /tmp && \
+    export GNUPGHOME="$(mktemp -d)" && \
+    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys ${CABAL_INSTALL_RELEASE_KEY} && \
+    curl -fSLO https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/SHA256SUMS && \
+    curl -fSLO https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/SHA256SUMS.sig && \
+    gpg --batch --trusted-key B3D9F94B8DCAE210 --verify SHA256SUMS.sig SHA256SUMS && \
+    curl -fSL https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/cabal-install-$CABAL_INSTALL-x86_64-linux-deb10.tar.xz -o cabal-install.tar.gz && \
+    echo "$CABAL_INSTALL_RELEASE_SHA256 cabal-install.tar.gz" | sha256sum --strict --check && \
+    tar -xf cabal-install.tar.gz -C /usr/local/bin && \
+    rm -rf "$GNUPGHOME" /var/lib/apt/lists/* /tmp/*
+
+ARG GHC=8.10.7
+ARG GHC_RELEASE_KEY=88B57FCF7DB53B4DB3BFA4B1588764FBE22D19C4
+# get from https://downloads.haskell.org/~ghc/$GHC/SHA256SUMS
+ARG GHC_RELEASE_SHA256=b6ed67049a23054a8042e65c9976d5e196e5ee4e83b29b2ee35c8a22ab1e5b73
+
+RUN cd /tmp && \
+  export GNUPGHOME="$(mktemp -d)" && \
+  export GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-x86_64-fedora27-linux.tar.xz" && \
+  curl -sSL "$GHC_URL" -o ghc.tar.xz && \
+  curl -sSL "$GHC_URL.sig" -o ghc.tar.xz.sig && \
+  gpg --batch --keyserver keyserver.ubuntu.com --receive-keys ${GHC_RELEASE_KEY} && \
+  gpg --batch --trusted-key 2DE04D4E97DB64AD --verify ghc.tar.xz.sig ghc.tar.xz && \
+  echo "$GHC_RELEASE_SHA256 ghc.tar.xz" | sha256sum --strict --check && \
+  tar xf ghc.tar.xz && \
+  cd ghc-$GHC && \
+  ./configure --prefix /opt/ghc/$GHC && \
+  make install && \
+  rm -rf /opt/ghc/$GHC/share/ && \
+  rm -rf "$GNUPGHOME" /tmp/* && \
+  "/opt/ghc/$GHC/bin/ghc" --version
+
+ENV PATH /root/.cabal/bin:/root/.local/bin:/opt/ghc/${GHC}/bin:$PATH
+
+CMD ["ghci"]
+
+# vim: set ft=dockerfile:
