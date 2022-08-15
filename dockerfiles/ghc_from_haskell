@@ -20,6 +20,7 @@ RUN apt-get update && \
         libtinfo-dev \
         make \
         cmake \
+        pkg-config \
         netbase \
         openssh-client \
         bash-completion \
