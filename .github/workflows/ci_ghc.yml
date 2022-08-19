@@ -10,6 +10,55 @@ on:
   pull_request:
 
 jobs:
+  init-ghc-haskell:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.check-if-skip.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - id: check-if-skip
+        uses: ./.github/actions/check-if-skip
+        with:
+          checksum-file: checksum/ghc_from_haskell.sha256sum
+
+  build-ghc-haskell:
+    runs-on: ubuntu-latest
+    needs: init-ghc-haskell
+    if: ${{ needs.init-ghc-haskell.outputs.skip == 'false' }}
+    strategy:
+      matrix:
+        # docker_args:docker_tag:[docker_tag_alias...]
+        ghc: ["8.10.7:8.10.7:8.10:latest", "9.2.4:9.2.4:9.2"]
+        include:
+          # get from https://downloads.haskell.org/~ghc/$GHC/SHA256SUMS
+          - ghc: 8.10.7:8.10.7:8.10:latest
+            ghc_sha256: b6ed67049a23054a8042e65c9976d5e196e5ee4e83b29b2ee35c8a22ab1e5b73
+          - ghc: 9.2.4:9.2.4:9.2
+            ghc_sha256: 3fdda484dc1054b27bb75975c379d4a7fdaff59c969098c807dad87d4bc91626
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: login to github container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: build
+        uses: ./.github/actions/docker-haskell
+        with:
+          image-name: ghcr.io/hstreamdb/ghc
+          dockerfile: dockerfiles/ghc_from_haskell
+          ghc: ${{ matrix.ghc }}
+          kargs-key: GHC_RELEASE_SHA256
+          kargs-value: ${{ matrix.ghc_sha256 }}
+
+  # ----------------------
+
   init-ghc-builder:
     runs-on: ubuntu-latest
     outputs:
@@ -60,47 +109,6 @@ jobs:
           kargs-key: BASE_GHC
           kargs-value: ${{ matrix.ghc_base }}
 
-  # ----------------------
-
-  init-ghc-haskell:
-    runs-on: ubuntu-latest
-    outputs:
-      skip: ${{ steps.check-if-skip.outputs.skip }}
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - id: check-if-skip
-        uses: ./.github/actions/check-if-skip
-        with:
-          checksum-file: checksum/ghc_from_haskell.sha256sum
-
-  build-ghc-haskell:
-    runs-on: ubuntu-latest
-    needs: init-ghc-haskell
-    if: ${{ needs.init-ghc-haskell.outputs.skip == 'false' }}
-    strategy:
-      matrix:
-        # docker_args:docker_tag:[docker_tag_alias...]
-        ghc: ["8.10.7:8.10.7:8.10:latest"]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: login to github container registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: build
-        uses: ./.github/actions/docker-haskell
-        with:
-          image-name: ghcr.io/hstreamdb/ghc
-          dockerfile: dockerfiles/ghc_from_haskell
-          ghc: ${{ matrix.ghc }}
-          cabal: ""
-
   init-ghc-ppa:
     runs-on: ubuntu-latest
     outputs:
@@ -141,41 +149,43 @@ jobs:
           ghc: ${{ matrix.ghc }}
           cabal: ${{ matrix.cabal }}
 
-  init-ghc-src:
-    runs-on: ubuntu-latest
-    outputs:
-      skip: ${{ steps.check-if-skip.outputs.skip }}
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - id: check-if-skip
-        uses: ./.github/actions/check-if-skip
-        with:
-          checksum-file: checksum/ghc.sha256sum
-
-  build-ghc-src:
-    runs-on: ubuntu-latest
-    needs: init-ghc-src
-    if: ${{ needs.init-ghc-src.outputs.skip == 'false' }}
-    strategy:
-      matrix:
-        # docker_args:docker_tag:[docker_tag_alias...]
-        ghc: ["9.2.1:9.2.1:9.2"]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: login to github container registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: build
-        uses: ./.github/actions/docker-haskell
-        with:
-          image-name: ghcr.io/hstreamdb/ghc
-          dockerfile: dockerfiles/ghc
-          ghc: ${{ matrix.ghc }}
-          cabal: ""
+# XXX: Unused
+#
+#  init-ghc-src:
+#    runs-on: ubuntu-latest
+#    outputs:
+#      skip: ${{ steps.check-if-skip.outputs.skip }}
+#    steps:
+#      - uses: actions/checkout@v2
+#        with:
+#          fetch-depth: 0
+#      - id: check-if-skip
+#        uses: ./.github/actions/check-if-skip
+#        with:
+#          checksum-file: checksum/ghc.sha256sum
+#
+#  build-ghc-src:
+#    runs-on: ubuntu-latest
+#    needs: init-ghc-src
+#    if: ${{ needs.init-ghc-src.outputs.skip == 'false' }}
+#    strategy:
+#      matrix:
+#        # docker_args:docker_tag:[docker_tag_alias...]
+#        ghc: ["9.2.1:9.2.1:9.2"]
+#    steps:
+#      - uses: actions/checkout@v2
+#
+#      - name: login to github container registry
+#        uses: docker/login-action@v1
+#        with:
+#          registry: ghcr.io
+#          username: ${{ github.actor }}
+#          password: ${{ secrets.GITHUB_TOKEN }}
+#
+#      - name: build
+#        uses: ./.github/actions/docker-haskell
+#        with:
+#          image-name: ghcr.io/hstreamdb/ghc
+#          dockerfile: dockerfiles/ghc
+#          ghc: ${{ matrix.ghc }}
+#          cabal: ""
