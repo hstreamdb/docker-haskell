@@ -4,7 +4,16 @@
 # See also: https://github.com/haskell/docker-haskell/
 # ------------------------------------------------------------------------------
 
-ARG GHC=8.10.4
+# ------------------------------------------------------------------------------
+# Global args (should be on the top of dockerifle)
+
+ARG GHC=8.10.7
+ARG LD_CLIENT_IMAGE="hstreamdb/logdevice-client:latest"
+
+# ------------------------------------------------------------------------------
+
+FROM ${LD_CLIENT_IMAGE} as ld_client
+
 FROM ghcr.io/hstreamdb/ghc:${GHC}
 
 RUN apt-get update && \
@@ -40,15 +49,15 @@ RUN apt-get update && \
       $(cat /tmp/requirements/ubuntu-focal.txt) && \
     rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
 
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
-COPY --from=hstreamdb/logdevice-client:latest /usr/lib/libjemalloc.so.2 /usr/lib/
+COPY --from=ld_client /usr/local/lib/ /usr/local/lib/
+COPY --from=ld_client /usr/local/include/ /usr/local/include/
+COPY --from=ld_client /usr/lib/libjemalloc.so.2 /usr/lib/
 RUN ln -sr /usr/lib/libjemalloc.so.2 /usr/lib/libjemalloc.so && \
     [ -f "/usr/local/include/thrift/lib/thrift/gen-cpp2/RpcMetadata_types.h" ] &&  \
     # temporary fix of "cabal build --enable-profiling" \
     sed -i '/^#pragma once/a #ifdef PROFILING\n#undef PROFILING\n#endif' /usr/local/include/thrift/lib/thrift/gen-cpp2/RpcMetadata_types.h
 
-COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
+COPY --from=ld_client /usr/local/bin/thrift1 /usr/local/bin/
 
 # ------------------------------------------------------------------------------
 # Install fbthrift
