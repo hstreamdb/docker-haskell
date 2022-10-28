@@ -58,3 +58,28 @@ jobs:
               docker push $IMAGE_NAME:$tag
             done
           fi
+
+  # TODO: merge with build
+  build-rqlite:
+    needs: init
+    if: ${{ needs.init.outputs.skip == 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: build & push images
+        run: |
+          DOCKER_BUILDKIT=1 docker build . -f Dockerfile \
+            --build-arg GHC=8.10.7 \
+            --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client:rqlite \
+            --tag hstreamdb/haskell:rqlite_8.10.7
+
+          if [ "${{ github.event_name }}" == 'push' ]; then
+            docker push hstreamdb/haskell:rqlite_8.10.7
+          fi
