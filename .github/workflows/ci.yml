@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ["8.10.7:8.10:latest", "9.0.2:9.0", "9.2.5:9.2"]
+        ghc: ["8.10.7:8.10", "9.2.5:9.2:latest"]
     steps:
       - uses: actions/checkout@v3
 
@@ -76,10 +76,10 @@ jobs:
       - name: build & push images
         run: |
           DOCKER_BUILDKIT=1 docker build . -f Dockerfile \
-            --build-arg GHC=8.10.7 \
+            --build-arg GHC=9.2.5 \
             --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client:rqlite \
-            --tag hstreamdb/haskell:rqlite_8.10.7
+            --tag hstreamdb/haskell:rqlite_9.2
 
           if [ "${{ github.event_name }}" == 'push' ]; then
-            docker push hstreamdb/haskell:rqlite_8.10.7
+            docker push hstreamdb/haskell:rqlite_9.2
           fi
