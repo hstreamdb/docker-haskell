@@ -1,0 +1,19 @@
+FROM docker.io/hstreamdb/haskell:8.10.7 as builder
+
+ARG BUILD_TYPE="ReleaseBuild"
+
+RUN git clone --depth=1 --recurse-submodules https://github.com/hstreamdb/hstream.git && \
+    cabal update && \
+    cd hstream && make && \
+    cabal install --flags "${BUILD_TYPE}" --project-file ./cabal.project.ghc810 hadmin-store && \
+    rm -rf hstream
+
+# ------------------------------------------------------------------------------
+
+FROM ubuntu:focal
+
+COPY --from=builder /root/.cabal/bin/hadmin-store /usr/local/bin/hadmin-store
+
+CMD ["bash"]
+
+# vim: set ft=dockerfile:
