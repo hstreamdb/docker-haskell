@@ -67,6 +67,15 @@ COPY --from=ghcr.io/hstreamdb/hsthrift:latest \
     /usr/local/bin/thrift-compiler \
     /usr/local/bin/thrift-compiler
 
+# ------------------------------------------------------------------------------
+# FIXME: hadmim-store
+
+COPY --from=ghcr.io/hstreamdb/hadmin-store:latest \
+    /usr/local/bin/hadmin-store \
+    /usr/local/bin/hadmin-store
+
+# ------------------------------------------------------------------------------
+
 ENV LANG C.UTF-8
 CMD ["ghci"]
 
