@@ -1,6 +1,3 @@
 [submodule "external/hsthrift"]
 	path = external/hsthrift
 	url = git@github.com:hstreamdb/hsthrift.git
-[submodule "external/grpc"]
-	path = external/grpc
-	url = git@github.com:grpc/grpc.git
