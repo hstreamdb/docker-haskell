@@ -3,7 +3,7 @@ name: ghc
 on:
   push:
     tags:
-      - '*'
+      - "*"
     branches:
       - release
 
@@ -26,41 +26,75 @@ jobs:
   build-ghc-haskell:
     runs-on: ubuntu-latest
     needs: init-ghc-haskell
+    name: build-ghc-haskell (${{ matrix.platform }}, ${{ matrix.ghc }})
     if: ${{ needs.init-ghc-haskell.outputs.skip == 'false' }}
     strategy:
       matrix:
-        # docker_args:docker_tag:[docker_tag_alias...]
-        ghc: ["8.10.7:8.10.7:8.10:latest", "9.0.2:9.0.2:9.0", "9.2.5:9.2.5:9.2"]
+        # get sha256 from https://downloads.haskell.org/~ghc/$GHC/SHA256SUMS
         include:
-          # get from https://downloads.haskell.org/~ghc/$GHC/SHA256SUMS
-          - ghc: 8.10.7:8.10.7:8.10:latest
+          - platform: linux/amd64
+            ghc: 8.10.7
+            ghc_tar: ghc-8.10.7-x86_64-fedora27-linux.tar.xz
             ghc_sha256: b6ed67049a23054a8042e65c9976d5e196e5ee4e83b29b2ee35c8a22ab1e5b73
-          - ghc: 9.0.2:9.0.2:9.0
-            ghc_sha256: a0ff9893618d597534682123360e7c80f97441f0e49f261828416110e8348ea0
-          - ghc: 9.2.5:9.2.5:9.2
+            cabal: 3.6.2.0
+            cabal_tar: cabal-install-3.6.2.0-x86_64-linux-deb10.tar.xz
+            cabal_sha256: 4759b56e9257e02f29fa374a6b25d6cb2f9d80c7e3a55d4f678a8e570925641c
+            tag: 8.10.7:8.10
+
+          - platform: linux/arm64
+            ghc: 8.10.7
+            ghc_tar: ghc-8.10.7-aarch64-deb10-linux.tar.xz
+            ghc_sha256: fad2417f9b295233bf8ade79c0e6140896359e87be46cb61cd1d35863d9d0e55
+            cabal: 3.6.2.0
+            cabal_tar: cabal-install-3.6.2.0-aarch64-linux-deb10.tar.xz
+            cabal_sha256: d9acee67d4308bc5c22d27bee034d388cc4192a25deff9e7e491e2396572b030
+            tag: 8.10.7:8.10
+
+          - platform: linux/amd64
+            ghc: 9.2.5
+            ghc_tar: ghc-9.2.5-x86_64-ubuntu20.04-linux.tar.xz
             ghc_sha256: be1ca5b2864880d7c3623c51f2c2ca773e380624929bf0be8cfadbdb7f4b7154
+            cabal: 3.6.2.0
+            cabal_tar: cabal-install-3.6.2.0-x86_64-linux-deb10.tar.xz
+            cabal_sha256: 4759b56e9257e02f29fa374a6b25d6cb2f9d80c7e3a55d4f678a8e570925641c
+            tag: 9.2.5:9.2:latest
+
+          - platform: linux/arm64
+            ghc: 9.2.5
+            ghc_tar: ghc-9.2.5-aarch64-deb10-linux.tar.xz
+            ghc_sha256: 29c0735ada90cdbf7e4a227dee08f18d74e33ec05d7c681e4ef95b8aa13104b3
+            cabal: 3.6.2.0
+            cabal_tar: cabal-install-3.6.2.0-aarch64-linux-deb10.tar.xz
+            cabal_sha256: d9acee67d4308bc5c22d27bee034d388cc4192a25deff9e7e491e2396572b030
+            tag: 9.2.5:9.2:latest
 
     steps:
       - uses: actions/checkout@v3
 
       - name: login to github container registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build
         uses: ./.github/actions/docker-haskell
         with:
           image-name: ghcr.io/hstreamdb/ghc
           dockerfile: dockerfiles/ghc_from_haskell
-          ghc: ${{ matrix.ghc }}
-          kargs-key: GHC_RELEASE_SHA256
-          kargs-value: ${{ matrix.ghc_sha256 }}
+          platform: ${{ matrix.platform }}
+          tag: ${{ matrix.tag }}
+          kargs-key: GHC:GHC_TAR:GHC_RELEASE_SHA256:CABAL:CABAL_TAR:CABAL_INSTALL_RELEASE_SHA256
+          kargs-value: ${{ matrix.ghc }}:${{ matrix.ghc_tar }}:${{ matrix.ghc_sha256 }}:${{ matrix.cabal }}:${{ matrix.cabal_tar }}:${{ matrix.cabal_sha256 }}
 
   # ----------------------
-
 # XXX: Unused
 #
 #  init-ghc-ppa:
