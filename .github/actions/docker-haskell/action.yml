@@ -8,11 +8,12 @@ inputs:
   dockerfile:
     description: "dockerfile"
     required: true
-  ghc:
-    description: "format: build_arg:docker_tag:[docker_tag_alias...]"
-    required: true
-  cabal:
-    description: "format: build_arg:docker_tag:[docker_tag_alias...]"
+  platform:
+    description: "buildx platform"
+    default: ""
+    required: false
+  tag:
+    description: "format: docker_tag:[docker_tag_alias...]"
     required: true
   kargs-key:
     description: "format: arg_key1:arg_key2:..."
@@ -26,49 +27,36 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - run: |
-        set -x
+    - name: Expose GitHub Runtime
+      uses: crazy-max/ghaction-github-runtime@v2
 
-        IFS=':' read -ra ghc_tags < <(echo "${{ inputs.ghc }}")
-        IFS=':' read -ra cabal_tags < <(echo "${{ inputs.cabal }}")
-        ghc_git_tag="${ghc_tags[0]}"
-        cabal_git_tag="${cabal_tags[0]}"
-        image_tag="${ghc_tags[1]}"
-        [ -n "${cabal_tags[1]}" ] && image_tag="${ghc_tags[1]}_${cabal_tags[1]}"
+    - name: Docker build
+      run: |
+        set -x
 
         IMAGE_NAME=${{ inputs.image-name }}
 
+        build_args=""
         IFS=':' read -ra kargs_keys < <(echo "${{ inputs.kargs-key }}")
         IFS=':' read -ra kargs_vals < <(echo "${{ inputs.kargs-value }}")
-        build_args=""
-        [ -n "$ghc_git_tag" ] && build_args="$build_args --build-arg GHC=${ghc_git_tag}"
-        [ -n "$cabal_git_tag" ] && build_args="$build_args --build-arg CABAL=${cabal_git_tag}"
         for (( i = 0; i < ${#kargs_keys[*]}; ++i )); do
           build_args="$build_args --build-arg ${kargs_keys[i]}=${kargs_vals[i]}"
         done
 
-        DOCKER_BUILDKIT=1 docker build . -f ${{ inputs.dockerfile }} \
-            $build_args --tag $IMAGE_NAME:${image_tag}
-
-        echo "Try pushing: $IMAGE_NAME:${image_tag}..."
-        if [ "${{ github.event_name }}" == 'push' ]; then
-          docker push $IMAGE_NAME:${image_tag}
-        else
-          echo "Ignoring."
-        fi
-
-        for (( i = 2; i < ${#ghc_tags[*]}; ++i )); do
-            ghc_tag_="${ghc_tags[i]}"
-            cabal_tag_="${cabal_tags[i]}"
-            alias_tag="${ghc_tag_}"
-            [ -n "${cabal_tag_}" ] && alias_tag="${ghc_tag_}_${cabal_tag_}"
-
-            echo "Try pushing alias: $IMAGE_NAME:${alias_tag}..."
-            if [ "${{ github.event_name }}" == 'push' ]; then
-              docker tag $IMAGE_NAME:$image_tag $IMAGE_NAME:$alias_tag
-              docker push $IMAGE_NAME:$alias_tag
-            else
-              echo "Ignoring."
-            fi
+        build_tags=""
+        IFS=':' read -ra tags < <(echo "${{ inputs.tag }}")
+        for (( i = 0; i < ${#tags[*]}; ++i )); do
+          build_tags="$build_tags --tag $IMAGE_NAME:${tags[i]}"
         done
+
+        push_arg=""
+        [ "${{ github.event_name }}" == "push" ] && push_arg="--push"
+        platform_arg=""
+        [ -n "${{ inputs.platform }}" ] && platform_arg="--platform ${{ inputs.platform }}"
+
+        # FIXME: this cache seems useless
+        # --cache-to type=gha --cache-from type=gha
+        docker buildx build . \
+          -f ${{ inputs.dockerfile }} \
+          $platform_arg $push_arg $build_args $build_tags
       shell: bash
