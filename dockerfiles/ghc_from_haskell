@@ -9,6 +9,7 @@ RUN apt-get update && \
         ca-certificates \
         gnupg \
         curl \
+        dpkg-dev \
         git \
         gcc-10 \
         g++-10 \
@@ -32,48 +33,98 @@ RUN apt-get update && \
     update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-10 20 && \
     rm -rf /var/lib/apt/lists/*
 
-ARG CABAL=3.6.2.0
-ARG CABAL_TAR=cabal-install-3.6.2.0-x86_64-linux-deb10.tar.xz
-ARG CABAL_INSTALL_RELEASE_KEY=A970DF3AC3B9709706D74544B3D9F94B8DCAE210
-# get from https://downloads.haskell.org/~cabal/cabal-install-$CABAL/SHA256SUMS
-ARG CABAL_INSTALL_RELEASE_SHA256=4759B56E9257E02F29FA374A6B25D6CB2F9D80C7E3A55D4F678A8E570925641C
+ARG CABAL_INSTALL=3.8.1.0
+ARG CABAL_INSTALL_RELEASE_KEY=E9EC5616017C3EE26B33468CCE1ED8AE0B011D8C
 
-RUN cd /tmp && \
-    export GNUPGHOME="$(mktemp -d)" && \
-    gpg --batch --keyserver keyserver.ubuntu.com --recv-keys ${CABAL_INSTALL_RELEASE_KEY} && \
-    curl -fSLO https://downloads.haskell.org/~cabal/cabal-install-$CABAL/SHA256SUMS && \
-    curl -fSLO https://downloads.haskell.org/~cabal/cabal-install-$CABAL/SHA256SUMS.sig && \
-    gpg --batch --verify SHA256SUMS.sig SHA256SUMS && \
-    curl -fSL https://downloads.haskell.org/~cabal/cabal-install-$CABAL/$CABAL_TAR -o cabal-install.tar.gz && \
-    echo "$CABAL_INSTALL_RELEASE_SHA256 cabal-install.tar.gz" | sha256sum --strict --check && \
-    tar -xf cabal-install.tar.gz -C /usr/local/bin && \
-    gpgconf --kill all && \
-    rm -rf "$GNUPGHOME" /var/lib/apt/lists/* /tmp/*
+# sha256 from https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/SHA256SUMS
+RUN \
+  set -eux; \
+  cd /tmp; \
+  ARCH="$(dpkg-architecture --query DEB_BUILD_GNU_CPU)"; \
+  CABAL_INSTALL_TAR="cabal-install-$CABAL_INSTALL-$ARCH-linux-deb10.tar.xz"; \
+  CABAL_INSTALL_URL="https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/$CABAL_INSTALL_TAR"; \
+  CABAL_INSTALL_SHA256SUMS_URL="https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/SHA256SUMS"; \
+  case "$ARCH" in \
+    'aarch64') \
+      CABAL_INSTALL_SHA256='c7fa9029f2f829432dd9dcf764e58605fbb7431db79234feb3e46684a9b37214'; \
+      ;; \
+    'x86_64') \
+      CABAL_INSTALL_SHA256='c71a1a46fd42d235bb86be968660815c24950e5da2d1ff4640da025ab520424b'; \
+      ;; \
+    *) echo >&2 "error: unsupported architecture '$ARCH'"; exit 1 ;; \
+  esac; \
+  curl -fSL "$CABAL_INSTALL_URL" -o cabal-install.tar.gz; \
+  echo "$CABAL_INSTALL_SHA256 cabal-install.tar.gz" | sha256sum --strict --check; \
+  \
+  curl -sSLO "$CABAL_INSTALL_SHA256SUMS_URL"; \
+  curl -sSLO "$CABAL_INSTALL_SHA256SUMS_URL.sig"; \
+  GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; \
+  gpg --batch --keyserver keyserver.ubuntu.com --receive-keys "$CABAL_INSTALL_RELEASE_KEY"; \
+  gpg --batch --verify SHA256SUMS.sig SHA256SUMS; \
+  # confirm we are verifying SHA256SUMS that matches the release + sha256
+  grep "$CABAL_INSTALL_SHA256  $CABAL_INSTALL_TAR" SHA256SUMS; \
+  gpgconf --kill all; \
+  tar -xf cabal-install.tar.gz -C /usr/local/bin; \
+  rm -rf /tmp/*; \
+  \
+  cabal --version
 
 ARG GHC=9.2.5
-ARG GHC_TAR=ghc-9.2.5-x86_64-ubuntu20.04-linux.tar.xz
 ARG GHC_RELEASE_KEY=88B57FCF7DB53B4DB3BFA4B1588764FBE22D19C4
-# get from https://downloads.haskell.org/~ghc/$GHC/SHA256SUMS
-ARG GHC_RELEASE_SHA256=be1ca5b2864880d7c3623c51f2c2ca773e380624929bf0be8cfadbdb7f4b7154
 
+# sha256 from https://downloads.haskell.org/~ghc/$GHC/SHA256SUMS
 RUN \
-  export GHC_URL="https://downloads.haskell.org/~ghc/$GHC/$GHC_TAR"; \
-  cd /tmp && \
-  export GNUPGHOME="$(mktemp -d)" && \
-  echo "Downloading ghc from $GHC_URL" && \
-  curl -sSL "$GHC_URL" -o ghc.tar.xz && \
-  curl -sSL "$GHC_URL.sig" -o ghc.tar.xz.sig && \
-  gpg --batch --keyserver keyserver.ubuntu.com --receive-keys ${GHC_RELEASE_KEY} && \
-  gpg --batch --verify ghc.tar.xz.sig ghc.tar.xz && \
-  gpgconf --kill all && \
-  echo "$GHC_RELEASE_SHA256 ghc.tar.xz" | sha256sum --strict --check && \
-  tar xf ghc.tar.xz && \
-  cd ghc-$GHC && \
-  ./configure --prefix /opt/ghc/$GHC && \
-  make install && \
-  rm -rf /opt/ghc/$GHC/share/ && \
-  rm -rf "$GNUPGHOME" /tmp/* && \
+  set -eux; \
+  cd /tmp; \
+  ARCH="$(dpkg-architecture --query DEB_BUILD_GNU_CPU)"; \
+  case "$ARCH" in \
+    'aarch64') \
+      case "$GHC" in \
+        '8.10.7') \
+          GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
+          GHC_SHA256='fad2417f9b295233bf8ade79c0e6140896359e87be46cb61cd1d35863d9d0e55'; \
+          ;; \
+        '9.2.5') \
+          GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
+          GHC_SHA256='29c0735ada90cdbf7e4a227dee08f18d74e33ec05d7c681e4ef95b8aa13104b3'; \
+          ;; \
+        *) echo >&2 "error: unsupported ghc '$GHC'" ; exit 1 ;; \
+      esac; \
+      ;; \
+    'x86_64') \
+      case "$GHC" in \
+        '8.10.7') \
+          GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-fedora27-linux.tar.xz"; \
+          GHC_SHA256='b6ed67049a23054a8042e65c9976d5e196e5ee4e83b29b2ee35c8a22ab1e5b73'; \
+          ;; \
+        '9.2.5') \
+          GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-ubuntu20.04-linux.tar.xz"; \
+          GHC_SHA256='be1ca5b2864880d7c3623c51f2c2ca773e380624929bf0be8cfadbdb7f4b7154'; \
+          ;; \
+        *) echo >&2 "error: unsupported ghc '$GHC'" ; exit 1 ;; \
+      esac; \
+      ;; \
+    *) echo >&2 "error: unsupported architecture '$ARCH'" ; exit 1 ;; \
+  esac; \
+  curl -sSL "$GHC_URL" -o ghc.tar.xz; \
+  echo "$GHC_SHA256 ghc.tar.xz" | sha256sum --strict --check; \
+  \
+  GNUPGHOME="$(mktemp -d)"; export GNUPGHOME; \
+  curl -sSL "$GHC_URL.sig" -o ghc.tar.xz.sig; \
+  gpg --batch --keyserver keyserver.ubuntu.com --receive-keys "$GHC_RELEASE_KEY"; \
+  gpg --batch --verify ghc.tar.xz.sig ghc.tar.xz; \
+  gpgconf --kill all; \
+  \
+  tar xf ghc.tar.xz; \
+  cd "ghc-$GHC"; \
+  ./configure --prefix "/opt/ghc/$GHC"; \
+  make install; \
+  \
+  rm -rf /opt/ghc/$GHC/share/ ; \
+  rm -rf "$GNUPGHOME" /tmp/* ; \
+  \
   "/opt/ghc/$GHC/bin/ghc" --version
+
 
 ENV PATH /root/.cabal/bin:/root/.local/bin:/opt/ghc/${GHC}/bin:$PATH
 

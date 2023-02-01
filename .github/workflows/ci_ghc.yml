@@ -32,40 +32,12 @@ jobs:
       matrix:
         # get sha256 from https://downloads.haskell.org/~ghc/$GHC/SHA256SUMS
         include:
-          - platform: linux/amd64
+          - platform: linux/amd64,linux/arm64
             ghc: 8.10.7
-            ghc_tar: ghc-8.10.7-x86_64-fedora27-linux.tar.xz
-            ghc_sha256: b6ed67049a23054a8042e65c9976d5e196e5ee4e83b29b2ee35c8a22ab1e5b73
-            cabal: 3.6.2.0
-            cabal_tar: cabal-install-3.6.2.0-x86_64-linux-deb10.tar.xz
-            cabal_sha256: 4759b56e9257e02f29fa374a6b25d6cb2f9d80c7e3a55d4f678a8e570925641c
             tag: 8.10.7:8.10
 
-          - platform: linux/arm64
-            ghc: 8.10.7
-            ghc_tar: ghc-8.10.7-aarch64-deb10-linux.tar.xz
-            ghc_sha256: fad2417f9b295233bf8ade79c0e6140896359e87be46cb61cd1d35863d9d0e55
-            cabal: 3.6.2.0
-            cabal_tar: cabal-install-3.6.2.0-aarch64-linux-deb10.tar.xz
-            cabal_sha256: d9acee67d4308bc5c22d27bee034d388cc4192a25deff9e7e491e2396572b030
-            tag: 8.10.7:8.10
-
-          - platform: linux/amd64
+          - platform: linux/amd64,linux/arm64
             ghc: 9.2.5
-            ghc_tar: ghc-9.2.5-x86_64-ubuntu20.04-linux.tar.xz
-            ghc_sha256: be1ca5b2864880d7c3623c51f2c2ca773e380624929bf0be8cfadbdb7f4b7154
-            cabal: 3.6.2.0
-            cabal_tar: cabal-install-3.6.2.0-x86_64-linux-deb10.tar.xz
-            cabal_sha256: 4759b56e9257e02f29fa374a6b25d6cb2f9d80c7e3a55d4f678a8e570925641c
-            tag: 9.2.5:9.2:latest
-
-          - platform: linux/arm64
-            ghc: 9.2.5
-            ghc_tar: ghc-9.2.5-aarch64-deb10-linux.tar.xz
-            ghc_sha256: 29c0735ada90cdbf7e4a227dee08f18d74e33ec05d7c681e4ef95b8aa13104b3
-            cabal: 3.6.2.0
-            cabal_tar: cabal-install-3.6.2.0-aarch64-linux-deb10.tar.xz
-            cabal_sha256: d9acee67d4308bc5c22d27bee034d388cc4192a25deff9e7e491e2396572b030
             tag: 9.2.5:9.2:latest
 
     steps:
@@ -91,8 +63,8 @@ jobs:
           dockerfile: dockerfiles/ghc_from_haskell
           platform: ${{ matrix.platform }}
           tag: ${{ matrix.tag }}
-          kargs-key: GHC:GHC_TAR:GHC_RELEASE_SHA256:CABAL:CABAL_TAR:CABAL_INSTALL_RELEASE_SHA256
-          kargs-value: ${{ matrix.ghc }}:${{ matrix.ghc_tar }}:${{ matrix.ghc_sha256 }}:${{ matrix.cabal }}:${{ matrix.cabal_tar }}:${{ matrix.cabal_sha256 }}
+          kargs-key: GHC
+          kargs-value: ${{ matrix.ghc }}
 
   # ----------------------
 # XXX: Unused
