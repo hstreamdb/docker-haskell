@@ -1,4 +1,4 @@
-FROM ghcr.io/hstreamdb/ghc:8.10.4 as builder
+FROM ghcr.io/hstreamdb/ghc:8.10.7 as builder
 
 # ------------------------------------------------------------------------------
 # Install hsthrift
@@ -15,12 +15,15 @@ RUN apt-get update && \
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
-COPY external/hsthrift/ /hsthrift/
 
-RUN export EXE_COMPONENT=thrift-compiler && \
+ARG PARALLEL
+
+RUN git clone --recurse-submodules --depth 1 --shallow-submodules \
+        https://github.com/hstreamdb/hsthrift.git /hsthrift && \
+    export EXE_COMPONENT=thrift-compiler && \
     cabal update && \
     cd /hsthrift && make thrift-cpp && \
-    cabal build exe:$EXE_COMPONENT && \
+    cabal build -j${PARALLEL:-$(nproc)} exe:$EXE_COMPONENT && \
     cp $(cabal exec -- which $EXE_COMPONENT | grep $EXE_COMPONENT) /usr/local/bin/ && \
     rm -rf /hsthrift /root/.cabal
 

@@ -93,9 +93,15 @@ RUN \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
           GHC_SHA256='fad2417f9b295233bf8ade79c0e6140896359e87be46cb61cd1d35863d9d0e55'; \
           ;; \
-        '9.2.5') \
+        '9.2.7') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
-          GHC_SHA256='29c0735ada90cdbf7e4a227dee08f18d74e33ec05d7c681e4ef95b8aa13104b3'; \
+          GHC_SHA256='b4829dd2f4bdaa4b21b22b50edec17616848ab22ab64188047a3eb12bb4da85a'; \
+          ;; \
+        '9.4.5') \
+          GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
+          GHC_SHA256='ecf16ec503e739e727174b29e5acbe4cf0c54737dd4d5eda046e09323f9ee248'; \
+          GHC_RELEASE_KEY='88b57fcf7db53b4db3bfa4b1588764fbe22d19c4'; \
+          GHC_EXTRACT_NAME="ghc-$GHC-$ARCH-unknown-linux"; \
           ;; \
         *) echo >&2 "error: unsupported ghc '$GHC'" ; exit 1 ;; \
       esac; \

@@ -24,22 +24,22 @@ RUN mkdir -p /deps/grpc && \
     make install -j${PARALLEL:-$(nproc)}
 
 # build & install grpc-gateway
-ARG GOPROXY_ENV
-RUN export RELEASE_DIR=/release && \
-    export GO111MODULE=on && \
-    export GOBIN=$RELEASE_DIR/bin && \
-    export GOPROXY=${GOPROXY_ENV} && \
-    export GOPATH=/root/go && \
-    /usr/lib/go-1.16/bin/go get -u \
-      github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.6.0 \
-      github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.6.0 \
-      google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
-      google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0 && \
-    mkdir -p $RELEASE_DIR/include/protoc-gen-openapiv2/options && \
-    cp -R /root/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2\@v2.6.0/protoc-gen-openapiv2/options/* \
-          $RELEASE_DIR/include/protoc-gen-openapiv2/options/ && \
-    mkdir -p $RELEASE_DIR/include/google/api && \
-    cp -R /deps/grpc/third_party/googleapis/google/api/* $RELEASE_DIR/include/google/api/
+#ARG GOPROXY_ENV
+#RUN export RELEASE_DIR=/release && \
+#    export GO111MODULE=on && \
+#    export GOBIN=$RELEASE_DIR/bin && \
+#    export GOPROXY=${GOPROXY_ENV} && \
+#    export GOPATH=/root/go && \
+#    /usr/lib/go-1.16/bin/go get -u \
+#      github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.6.0 \
+#      github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.6.0 \
+#      google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1 \
+#      google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0 && \
+#    mkdir -p $RELEASE_DIR/include/protoc-gen-openapiv2/options && \
+#    cp -R /root/go/pkg/mod/github.com/grpc-ecosystem/grpc-gateway/v2\@v2.6.0/protoc-gen-openapiv2/options/* \
+#          $RELEASE_DIR/include/protoc-gen-openapiv2/options/ && \
+#    mkdir -p $RELEASE_DIR/include/google/api && \
+#    cp -R /deps/grpc/third_party/googleapis/google/api/* $RELEASE_DIR/include/google/api/
 
 RUN rm -rf /var/lib/apt/lists/* /deps
 

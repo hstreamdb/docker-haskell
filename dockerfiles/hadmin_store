@@ -1,11 +1,41 @@
-FROM docker.io/hstreamdb/haskell:8.10.7 as builder
+FROM ghcr.io/hstreamdb/ghc:8.10.7 as builder
+
+# ------------------------------------------------------------------------------
+# Build hadmin-store
+
+ENV LD_LIBRARY_PATH /usr/local/lib:$LD_LIBRARY_PATH
+ENV PKG_CONFIG_PATH /usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
+
+COPY requirements/ /tmp/requirements/
+RUN apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+      $(cat /tmp/requirements/ubuntu-focal.txt) && \
+    rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
+
+# Install fbthrift
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/lib/ /usr/local/lib/
+COPY --from=hstreamdb/logdevice-client:latest /usr/local/include/ /usr/local/include/
+COPY --from=ghcr.io/hstreamdb/hsthrift:latest \
+    /usr/local/bin/thrift-compiler \
+    /usr/local/bin/thrift-compiler
+
+# Install grpc
+# TODO: remove this grpc dependency
+COPY --from=ghcr.io/hstreamdb/grpc:1.35.0 /usr/local/include/ /usr/local/include/
+COPY --from=ghcr.io/hstreamdb/grpc:1.35.0 /usr/local/bin/ /usr/local/bin/
+COPY --from=ghcr.io/hstreamdb/grpc:1.35.0 /usr/local/lib/ /usr/local/lib/
 
 ARG BUILD_TYPE="ReleaseBuild"
+ARG PARALLEL
 
+# FIXME: actually we only need to make grpc-cpp
 RUN git clone --depth=1 --recurse-submodules https://github.com/hstreamdb/hstream.git && \
-    cabal update && \
-    cd hstream && make && \
-    cabal install --flags "${BUILD_TYPE}" --project-file ./cabal.project.ghc810 hadmin-store && \
+    cabal update && cd hstream && \
+    echo "Build with commit $(git log -1 --pretty=oneline)" && \
+    CABAL_BUILD_PARALLEL=${PARALLEL:-$(nproc)} make thrift && \
+    cabal install -j${PARALLEL:-$(nproc)} --flags "${BUILD_TYPE}" \
+      --project-file ./cabal.project.hadmin.store hadmin-store && \
     rm -rf hstream
 
 # ------------------------------------------------------------------------------

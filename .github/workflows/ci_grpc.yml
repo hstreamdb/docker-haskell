@@ -22,12 +22,9 @@ jobs:
         with:
           fetch-depth: 0
       - id: check-if-skip
-        run: |
-          if sha256sum -c checksum/grpc.sha256sum --status; then
-            echo "::set-output name=skip::true"
-          else
-            echo "::set-output name=skip::false"
-          fi
+        uses: ./.github/actions/check-if-skip
+        with:
+          checksum-file: checksum/grpc.sha256sum
 
   build:
     needs: init
@@ -54,7 +51,8 @@ jobs:
       - name: Build & Push images
         run: |
           if [ "${{ github.event_name }}" == 'push' ]; then
-            docker buildx build . --platform linux/amd64,linux/arm64 --push -f dockerfiles/grpc -t $IMAGE
+            docker build . -f dockerfiles/grpc -t $IMAGE
+            docker push $IMAGE
           else
-            docker buildx build . --platform linux/amd64,linux/arm64 -f dockerfiles/grpc -t $IMAGE
+            docker build . -f dockerfiles/grpc -t $IMAGE
           fi
