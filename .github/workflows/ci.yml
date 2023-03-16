@@ -76,7 +76,7 @@ jobs:
       - name: build & push images
         run: |
           DOCKER_BUILDKIT=1 docker build . -f Dockerfile \
-            --build-arg GHC=9.2.5 \
+            --build-arg GHC=9.2.7 \
             --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client:rqlite \
             --tag hstreamdb/haskell:rqlite_9.2
 
