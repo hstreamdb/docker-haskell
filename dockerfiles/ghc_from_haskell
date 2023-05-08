@@ -106,18 +106,14 @@ RUN \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-fedora27-linux.tar.xz"; \
           GHC_SHA256='b6ed67049a23054a8042e65c9976d5e196e5ee4e83b29b2ee35c8a22ab1e5b73'; \
           ;; \
-        '9.2.5') \
-          GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-ubuntu20.04-linux.tar.xz"; \
-          GHC_SHA256='be1ca5b2864880d7c3623c51f2c2ca773e380624929bf0be8cfadbdb7f4b7154'; \
-          ;; \
         '9.2.7') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-ubuntu20.04-linux.tar.xz"; \
           GHC_SHA256='b74d8d1afd181dd48ba81a2e8991c01281975b7a25791a0504835d049ae416c3'; \
           ;; \
-        '9.4.4') \
+        '9.4.5') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb11-linux.tar.xz"; \
-          GHC_SHA256='3794e9ebf463beb7d39e781fa3ef5b344c6144bc405192f1086f855ba8b227b3'; \
-          GHC_RELEASE_KEY='FFEB7CE81E16A36B3E2DED6F2DE04D4E97DB64AD'; \
+          GHC_SHA256='561ccb6b155672f5077fd79daf13a862710049202c7448ce82ee2ee1d9063bc7'; \
+          GHC_RELEASE_KEY='88b57fcf7db53b4db3bfa4b1588764fbe22d19c4'; \
           GHC_EXTRACT_NAME="ghc-$GHC-$ARCH-unknown-linux"; \
           ;; \
         *) echo >&2 "error: unsupported ghc '$GHC'" ; exit 1 ;; \

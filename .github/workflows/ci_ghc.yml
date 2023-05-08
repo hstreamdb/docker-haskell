@@ -42,8 +42,8 @@ jobs:
             tag: 9.2.7:9.2:latest
 
           - platform: linux/amd64
-            ghc: 9.4.4
-            tag: 9.4.4:9.4
+            ghc: 9.4.5
+            tag: 9.4.5:9.4
 
     steps:
       - uses: actions/checkout@v3
