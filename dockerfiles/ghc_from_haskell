@@ -93,9 +93,9 @@ RUN \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
           GHC_SHA256='fad2417f9b295233bf8ade79c0e6140896359e87be46cb61cd1d35863d9d0e55'; \
           ;; \
-        '9.2.7') \
+        '9.2.8') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
-          GHC_SHA256='b4829dd2f4bdaa4b21b22b50edec17616848ab22ab64188047a3eb12bb4da85a'; \
+          GHC_SHA256='645433359d8ad9e7b286f85ef5111db1b787ee3712c24c5dfde7c62769aa59a4'; \
           ;; \
         '9.4.5') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
@@ -112,9 +112,9 @@ RUN \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-fedora27-linux.tar.xz"; \
           GHC_SHA256='b6ed67049a23054a8042e65c9976d5e196e5ee4e83b29b2ee35c8a22ab1e5b73'; \
           ;; \
-        '9.2.7') \
+        '9.2.8') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-ubuntu20.04-linux.tar.xz"; \
-          GHC_SHA256='b74d8d1afd181dd48ba81a2e8991c01281975b7a25791a0504835d049ae416c3'; \
+          GHC_SHA256='6e4adc184a53ca9d9dd8c11c6611d0643fdc3b76550ae769e378d9edb2bda745'; \
           ;; \
         '9.4.5') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb11-linux.tar.xz"; \

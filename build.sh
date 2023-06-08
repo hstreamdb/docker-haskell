@@ -3,8 +3,9 @@ set -e
 
 # x86_64, aarch64
 ARCH=$(uname -m)
-LD_DIR="./LogDevice"
-HS_DIR="./docker-haskell"
+LD_DIR="${LD_DIR:-./LogDevice}"
+HS_DIR="${HS_DIR:-./docker-haskell}"
+HSTREAM_DIR="${HSTREAM_DIR:-./hstream}"
 
 setup() {
     git clone --recurse-submodules https://github.com/hstreamdb/LogDevice.git
@@ -127,53 +128,84 @@ push_grpc_manifest() {
 
 # -----------------------------------------------------------------------------
 
-build_ghc() {
+_build_ghc() {
     cd $HS_DIR
+    build_ghc="$1"  # e.g. 9.2.8
+    tag="$2"  # e.g. 9.2.8
+    tag1="$3" # e.g. 9.2
     docker build . -f dockerfiles/ghc_from_haskell \
-        --build-arg GHC=8.10.7 \
-        -t ghcr.io/hstreamdb/ghc:8.10.7_$ARCH \
-        -t ghcr.io/hstreamdb/ghc:8.10_$ARCH
-
-    docker build . -f dockerfiles/ghc_from_haskell \
-        --build-arg GHC=9.2.7 \
-        -t ghcr.io/hstreamdb/ghc:9.2.7_$ARCH \
-        -t ghcr.io/hstreamdb/ghc:9.2_$ARCH
-
-    docker build . -f dockerfiles/ghc_from_haskell \
-        --build-arg GHC=9.4.5 \
-        -t ghcr.io/hstreamdb/ghc:9.4.5_$ARCH \
-        -t ghcr.io/hstreamdb/ghc:9.4_$ARCH
+        --build-arg GHC=$build_ghc \
+        -t ghcr.io/hstreamdb/ghc:${tag}_$ARCH \
+        -t ghcr.io/hstreamdb/ghc:${tag1}_$ARCH
 }
 
-push_ghc() {
-    docker push ghcr.io/hstreamdb/ghc:8.10.7_$ARCH
-    docker push ghcr.io/hstreamdb/ghc:8.10_$ARCH
-
-    docker push ghcr.io/hstreamdb/ghc:9.2.7_$ARCH
-    docker push ghcr.io/hstreamdb/ghc:9.2_$ARCH
-
-    docker push ghcr.io/hstreamdb/ghc:9.4.5_$ARCH
-    docker push ghcr.io/hstreamdb/ghc:9.4_$ARCH
+_push_ghc() {
+    tag="$1"  # e.g. 9.2.8
+    tag1="$2" # e.g. 9.2
+    docker push ghcr.io/hstreamdb/ghc:${tag}_$ARCH
+    docker push ghcr.io/hstreamdb/ghc:${tag1}_$ARCH
 }
 
-push_ghc_manifest() {
-    for x in "8.10.7:8.10" "9.2.7:9.2" "9.4.5:9.4"; do
-        tag=$(echo $x | cut -d ":" -f 1)
-        tag1=$(echo $x | cut -d ":" -f 2)
+_push_ghc_manifest() {
+    tag="$1"  # e.g. 9.2.8
+    tag1="$2" # e.g. 9.2
+    docker manifest rm ghcr.io/hstreamdb/ghc:$tag || true
+    docker manifest rm ghcr.io/hstreamdb/ghc:$tag1 || true
 
-        docker manifest rm ghcr.io/hstreamdb/ghc:$tag || true
-        docker manifest rm ghcr.io/hstreamdb/ghc:$tag1 || true
+    docker manifest create ghcr.io/hstreamdb/ghc:$tag \
+        ghcr.io/hstreamdb/ghc:${tag}_x86_64 \
+        ghcr.io/hstreamdb/ghc:${tag}_aarch64
+    docker manifest create ghcr.io/hstreamdb/ghc:$tag1 \
+        ghcr.io/hstreamdb/ghc:${tag1}_x86_64 \
+        ghcr.io/hstreamdb/ghc:${tag1}_aarch64
 
-        docker manifest create ghcr.io/hstreamdb/ghc:$tag \
-            ghcr.io/hstreamdb/ghc:${tag}_x86_64 \
-            ghcr.io/hstreamdb/ghc:${tag}_aarch64
-        docker manifest create ghcr.io/hstreamdb/ghc:$tag1 \
-            ghcr.io/hstreamdb/ghc:${tag1}_x86_64 \
-            ghcr.io/hstreamdb/ghc:${tag1}_aarch64
+    docker manifest push ghcr.io/hstreamdb/ghc:$tag
+    docker manifest push ghcr.io/hstreamdb/ghc:$tag1
+}
 
-        docker manifest push ghcr.io/hstreamdb/ghc:$tag
-        docker manifest push ghcr.io/hstreamdb/ghc:$tag1
-    done
+_push_ghc_latest_manifest() {
+    tag="$1"  # e.g. 9.2.8
+    docker manifest rm ghcr.io/hstreamdb/ghc || true
+
+    docker manifest create ghcr.io/hstreamdb/ghc \
+        ghcr.io/hstreamdb/ghc:${tag}_x86_64 \
+        ghcr.io/hstreamdb/ghc:${tag}_aarch64
+
+    docker manifest push ghcr.io/hstreamdb/ghc
+}
+
+build_ghc810() {
+    _build_ghc 8.10.7 8.10.7 8.10
+}
+build_ghc902() {
+    _build_ghc 9.2.8 9.2.8 9.2
+}
+build_ghc904() {
+    _build_ghc 9.4.5 9.4.5 9.4
+}
+
+push_ghc810() {
+    _push_ghc 8.10.7 8.10
+}
+push_ghc902() {
+    _push_ghc 9.2.8 9.2
+}
+push_ghc904() {
+    _push_ghc 9.4.5 9.4
+}
+
+push_ghc810_manifest() {
+    _push_ghc_manifest 8.10.7 8.10
+}
+push_ghc902_manifest() {
+    _push_ghc_manifest 9.2.8 9.2
+}
+push_ghc904_manifest() {
+    _push_ghc_manifest 9.4.5 9.4
+}
+
+push_ghc_latest_manifest() {
+    _push_ghc_latest_manifest 9.2.8
 }
 
 # -----------------------------------------------------------------------------
@@ -216,105 +248,169 @@ push_hadmin_store_manifest() {
 
 # -----------------------------------------------------------------------------
 
-build_haskell() {
+_build_haskell() {
     cd $HS_DIR
-    for x in "8.10.7:8.10" "9.2.7:9.2" "9.4.5:9.4"; do
-        tag=$(echo $x | cut -d ":" -f 1)
-        tag1=$(echo $x | cut -d ":" -f 2)
-
-        docker build . -f Dockerfile \
-            --build-arg GHC=$tag \
-            --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client \
-            --tag hstreamdb/haskell:${tag}_$ARCH \
-            --tag hstreamdb/haskell:${tag1}_$ARCH
-        done
+    ghc="$1"
+    ld_client="$2"
+    tag="$3"
+    tag1="$4"
+    docker build . -f Dockerfile \
+        --build-arg GHC=$ghc \
+        --build-arg LD_CLIENT_IMAGE=$ld_client \
+        --tag hstreamdb/haskell:${tag}_$ARCH \
+        --tag hstreamdb/haskell:${tag1}_$ARCH
 }
 
-push_haskell() {
-    for x in "8.10.7:8.10" "9.2.7:9.2" "9.4.5:9.4"; do
-        tag=$(echo $x | cut -d ":" -f 1)
-        tag1=$(echo $x | cut -d ":" -f 2)
-
-        docker push hstreamdb/haskell:${tag}_$ARCH
-        docker push hstreamdb/haskell:${tag1}_$ARCH
-    done
+build_haskell810() {
+    _build_haskell 8.10.7 hstreamdb/logdevice-client 8.10.7 8.10
+}
+build_haskell902() {
+    _build_haskell 9.2.8 hstreamdb/logdevice-client 9.2.8 9.2
+}
+build_haskell904() {
+    _build_haskell 9.4.5 hstreamdb/logdevice-client 9.4.5 9.4
 }
 
-push_haskell_manifest() {
+build_haskell810_rq() {
+    _build_haskell 8.10.7 hstreamdb/logdevice-client:rqlite "rqlite_8.10.7" "rqlite_8.10"
+}
+build_haskell902_rq() {
+    _build_haskell 9.2.8 hstreamdb/logdevice-client:rqlite "rqlite_9.2.8" "rqlite_9.2"
+}
+build_haskell904_rq() {
+    _build_haskell 9.4.5 hstreamdb/logdevice-client:rqlite "rqlite_9.4.5" "rqlite_9.4"
+}
+
+_push_haskell() {
+    tag="$1"
+    tag1="$2"
+    docker push hstreamdb/haskell:${tag}_$ARCH
+    docker push hstreamdb/haskell:${tag1}_$ARCH
+}
+
+push_haskell810() {
+    _push_haskell 8.10.7 8.10
+}
+push_haskell902() {
+    _push_haskell 9.2.8 9.2
+}
+push_haskell904() {
+    _push_haskell 9.4.5 9.4
+}
+push_haskell810_rq() {
+    _push_haskell "rqlite_8.10.7" "rqlite_8.10"
+}
+push_haskell902_rq() {
+    _push_haskell "rqlite_9.2.8" "rqlite_9.2"
+}
+push_haskell904_rq() {
+    _push_haskell "rqlite_9.4.5" "rqlite_9.4"
+}
+
+_push_haskell_manifest(){
     image="hstreamdb/haskell"
-    for x in "8.10.7:8.10" "9.2.7:9.2" "9.4.5:9.4"; do
-        tag=$(echo $x | cut -d ":" -f 1)
-        tag1=$(echo $x | cut -d ":" -f 2)
+    tag="$1"
+    tag1="$2"
+    docker manifest rm $image:$tag || true
+    docker manifest create $image:$tag \
+        $image:${tag}_x86_64 \
+        $image:${tag}_aarch64
+    docker manifest push $image:$tag
 
-        docker manifest rm $image:$tag || true
-        docker manifest create $image:$tag \
-            $image:${tag}_x86_64 \
-            $image:${tag}_aarch64
-        docker manifest push $image:$tag
+    docker manifest rm $image:$tag1 || true
+    docker manifest create $image:$tag1 \
+        $image:${tag1}_x86_64 \
+        $image:${tag1}_aarch64
+    docker manifest push $image:$tag1
+}
 
-        docker manifest rm $image:$tag1 || true
-        docker manifest create $image:$tag1 \
-            $image:${tag1}_x86_64 \
-            $image:${tag1}_aarch64
-        docker manifest push $image:$tag1
-    done
+push_haskell810_manifest() {
+    _push_haskell_manifest 8.10.7 8.10
+}
+push_haskell902_manifest() {
+    _push_haskell_manifest 9.2.8 9.2
+}
+push_haskell904_manifest() {
+    _push_haskell_manifest 9.4.5 9.4
+}
 
-    docker manifest rm $image:latest || true
-    docker manifest create $image:latest \
-        $image:9.2_x86_64 \
-        $image:9.2_aarch64
-    docker manifest push $image:latest
+push_haskell810_manifest_rq() {
+    _push_haskell_manifest "rqlite_8.10.7" "rqlite_8.10"
+}
+push_haskell902_manifest_rq() {
+    _push_haskell_manifest "rqlite_9.2.8" "rqlite_9.2"
+}
+push_haskell904_manifest_rq() {
+    _push_haskell_manifest "rqlite_9.4.5" "rqlite_9.4"
+}
+
+_push_haskell_latest_manifest() {
+    image="hstreamdb/haskell"
+    tag="$1"
+    ghc="$2"
+
+    docker manifest rm $image:$tag || true
+    docker manifest create $image:$tag \
+        $image:${ghc}_x86_64 \
+        $image:${ghc}_aarch64
+    docker manifest push $image:$tag
+}
+
+push_haskell_latest_manifest() {
+    _push_haskell_latest_manifest latest 9.2.8
+}
+push_haskell_latest_manifest_rq() {
+    _push_haskell_latest_manifest rqlite "rqlite_9.2.8"
 }
 
 # -----------------------------------------------------------------------------
 
-build_haskell_rq() {
-    cd $HS_DIR
-    for x in "8.10.7:8.10.7:8.10" "9.2.7:9.2.7:9.2" "9.4.5:9.4.5:9.4"; do
-        ghc=$(echo $x | cut -d ":" -f 1)
-        tag="rqlite_$(echo $x | cut -d ":" -f 2)"
-        tag1="rqlite_$(echo $x | cut -d ":" -f 3)"
-
-        docker build . -f Dockerfile \
-            --build-arg GHC=$ghc \
-            --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client:rqlite \
-            --tag hstreamdb/haskell:${tag}_$ARCH \
-            --tag hstreamdb/haskell:${tag1}_$ARCH
-    done
+_build_hstream() {
+    cd $HSTREAM_DIR
+    builder_image="$1"
+    ld_image="$2"
+    git_tag="$(git describe --tag --abbrev=0)"
+    git_commit="$(git rev-parse HEAD)"
+    docker build . -f docker/Dockerfile \
+        --build-arg BUILDER_IMAGE=$builder_image \
+        --build-arg LD_IMAGE=$ld_image \
+        --build-arg HSTREAM_VERSION=$git_tag \
+        --build-arg HSTREAM_VERSION_COMMIT=$git_commit \
+        -t hstreamdb/hstream:$git_tag
 }
 
-push_haskell_rq() {
-    for x in "8.10.7:8.10" "9.2.7:9.2" "9.4.5:9.4"; do
-        tag="rqlite_$(echo $x | cut -d ":" -f 1)"
-        tag1="rqlite_$(echo $x | cut -d ":" -f 2)"
-
-        docker push hstreamdb/haskell:${tag}_$ARCH
-        docker push hstreamdb/haskell:${tag1}_$ARCH
-    done
+build_hstream() {
+    _build_hstream "hstreamdb/haskell:9.2" "hstreamdb/logdevice:latest"
+}
+build_hstream_rq() {
+    _build_hstream "hstreamdb/haskell:rqlite_9.2" "hstreamdb/logdevice:rqlite"
 }
 
-push_haskell_manifest_rq() {
-    image="hstreamdb/haskell"
-    for x in "8.10.7:8.10" "9.2.7:9.2" "9.4.5:9.4"; do
-        tag="rqlite_$(echo $x | cut -d ":" -f 1)"
-        tag1="rqlite_$(echo $x | cut -d ":" -f 2)"
-
-        docker manifest rm $image:$tag || true
-        docker manifest create $image:$tag \
-            $image:${tag}_x86_64 \
-            $image:${tag}_aarch64
-        docker manifest push $image:$tag
-
-        docker manifest rm $image:$tag1 || true
-        docker manifest create $image:$tag1 \
-            $image:${tag1}_x86_64 \
-            $image:${tag1}_aarch64
-        docker manifest push $image:$tag1
-    done
-
-    docker manifest rm $image:rqlite || true
-    docker manifest create $image:rqlite \
-        $image:rqlite_9.2_x86_64 \
-        $image:rqlite_9.2_aarch64
-    docker manifest push $image:rqlite
+_pre_push_hstream() {
+    tag="$1"
+    docker pull hstreamdb/hstream:$tag
+    docker tag hstreamdb/hstream:$tag hstreamdb/hstream:${tag}_$ARCH
+    docker push hstreamdb/hstream:${tag}_$ARCH
 }
+pre_push_hstream() {
+    _pre_push_hstream "v0.15.2"
+    _pre_push_hstream "rqlite_v0.15.2"
+}
+
+_push_hstream_manifest() {
+    image="hstreamdb/hstream"
+    tag="$1"
+    docker manifest rm $image:$tag || true
+    docker manifest create $image:$tag \
+        $image:${tag}_x86_64 \
+        $image:${tag}_aarch64
+    docker manifest push $image:$tag
+}
+
+push_hstream_tag_manifest() {
+    _push_hstream_manifest "v0.15.2"
+}
+
+# -----------------------------------------------------------------------------
+
+[ "$1" ] && $1
