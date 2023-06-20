@@ -1,11 +1,33 @@
 #!/bin/bash
-set -e
+set -ex
 
 # x86_64, aarch64
 ARCH=$(uname -m)
 LD_DIR="${LD_DIR:-./LogDevice}"
 HS_DIR="${HS_DIR:-./docker-haskell}"
 HSTREAM_DIR="${HSTREAM_DIR:-./hstream}"
+
+# -----------------------------------------------------------------------------
+
+_push_manifest() {
+    image="$1"
+    tag="$2"
+
+    [ -z "$image" ] && echo "No image!" && exit 1;
+
+    tag_x86="${tag}_x86_64"
+    tag_arm="${tag}_aarch64"
+    if [ -z "$tag" ] || [ "$tag" = "latest" ]; then
+        tag="latest"
+        tag_x86="x86_64"
+        tag_arm="aarch64"
+    fi
+    docker manifest rm $image:$tag || true
+    docker manifest create $image:$tag $image:$tag_x86 $image:$tag_arm
+    docker manifest push $image:$tag
+}
+
+# -----------------------------------------------------------------------------
 
 setup() {
     git clone --recurse-submodules https://github.com/hstreamdb/LogDevice.git
@@ -109,21 +131,21 @@ push_logdevice_manifest_rq() {
 
 # -----------------------------------------------------------------------------
 
+GRPC=${GRPC:-1.54.2}
+
 build_grpc() {
     cd $HS_DIR
-    docker build . -f dockerfiles/grpc -t ghcr.io/hstreamdb/grpc:1.35.0_$ARCH
+    docker build . -f dockerfiles/grpc \
+        --build-arg GRPC=v${GRPC} \
+        -t ghcr.io/hstreamdb/grpc:${GRPC}_$ARCH
 }
 
 push_grpc() {
-    docker push ghcr.io/hstreamdb/grpc:1.35.0_$ARCH
+    docker push ghcr.io/hstreamdb/grpc:${GRPC}_$ARCH
 }
 
 push_grpc_manifest() {
-    docker manifest rm ghcr.io/hstreamdb/grpc:1.35.0 || true
-    docker manifest create ghcr.io/hstreamdb/grpc:1.35.0 \
-        ghcr.io/hstreamdb/grpc:1.35.0_x86_64 \
-        ghcr.io/hstreamdb/grpc:1.35.0_aarch64
-    docker manifest push ghcr.io/hstreamdb/grpc:1.35.0
+    _push_manifest ghcr.io/hstreamdb/grpc "$GRPC"
 }
 
 # -----------------------------------------------------------------------------

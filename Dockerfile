@@ -37,9 +37,9 @@ ENV PKG_CONFIG_PATH /usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 # ------------------------------------------------------------------------------
 # Install grpc-dev library
 
-COPY --from=ghcr.io/hstreamdb/grpc:1.35.0 /usr/local/include/ /usr/local/include/
-COPY --from=ghcr.io/hstreamdb/grpc:1.35.0 /usr/local/bin/ /usr/local/bin/
-COPY --from=ghcr.io/hstreamdb/grpc:1.35.0 /usr/local/lib/ /usr/local/lib/
+COPY --from=ghcr.io/hstreamdb/grpc:1.54.2 /usr/local/include/ /usr/local/include/
+COPY --from=ghcr.io/hstreamdb/grpc:1.54.2 /usr/local/bin/ /usr/local/bin/
+COPY --from=ghcr.io/hstreamdb/grpc:1.54.2 /usr/local/lib/ /usr/local/lib/
 
 # ------------------------------------------------------------------------------
 # Install LogDevice client

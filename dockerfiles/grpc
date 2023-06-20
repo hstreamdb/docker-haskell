@@ -1,4 +1,4 @@
-# docker build . -f dockerfiles/grpc -t ghcr.io/hstreamdb/grpc:1.35.0
+# docker build . -f dockerfiles/grpc -t ghcr.io/hstreamdb/grpc:1.54.2
 #
 # ref: https://github.com/grpc/grpc/blob/master/BUILDING.md
 
@@ -6,24 +6,31 @@ FROM ubuntu:focal as builder
 
 RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
       build-essential autoconf libtool libssl-dev pkg-config cmake \
-      golang-1.16-go git
+      git
 
 ARG PARALLEL
+ARG GRPC=v1.54.2
+
 RUN mkdir -p /deps/grpc && \
-    git clone --recurse-submodules -b v1.35.0 --depth 1 --shallow-submodules \
+    git clone --recurse-submodules -b $GRPC --depth 1 --shallow-submodules \
         https://github.com/grpc/grpc /deps/grpc && \
     BUILD_DIR=$(mktemp -d) RELEASE_DIR=/release && \
     mkdir -p $RELEASE_DIR && cd $BUILD_DIR && \
     cmake -DCMAKE_INSTALL_PREFIX=$RELEASE_DIR \
           -DBUILD_SHARED_LIBS=ON \
           -DgRPC_INSTALL=ON \
+          -DgRPC_BUILD_TESTS=OFF \
           -DCMAKE_BUILD_TYPE=Release \
           -DgRPC_SSL_PROVIDER=package \
           /deps/grpc && \
     make -j ${PARALLEL:-$(nproc)} && \
     make install -j${PARALLEL:-$(nproc)}
 
+# We do not use grpc-gateway anymore.
+#
 # build & install grpc-gateway
+#RUN apt-get update && DEBIAN_FRONTEND="noninteractive" apt-get install -y \
+#      golang-1.16-go
 #ARG GOPROXY_ENV
 #RUN export RELEASE_DIR=/release && \
 #    export GO111MODULE=on && \
