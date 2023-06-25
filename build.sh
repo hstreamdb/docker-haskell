@@ -261,11 +261,7 @@ push_hadmin_store() {
 }
 
 push_hadmin_store_manifest() {
-    docker manifest rm ghcr.io/hstreamdb/hadmin-store || true
-    docker manifest create ghcr.io/hstreamdb/hadmin-store \
-        ghcr.io/hstreamdb/hadmin-store:x86_64 \
-        ghcr.io/hstreamdb/hadmin-store:aarch64
-    docker manifest push ghcr.io/hstreamdb/hadmin-store
+    _push_manifest ghcr.io/hstreamdb/hadmin-store
 }
 
 # -----------------------------------------------------------------------------
