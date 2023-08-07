@@ -32,6 +32,7 @@ _push_manifest() {
 setup() {
     git clone --recurse-submodules https://github.com/hstreamdb/LogDevice.git
     git clone --recurse-submodules https://github.com/hstreamdb/docker-haskell.git
+    git clone --recurse-submodules https://github.com/hstreamdb/hstream.git
     cd $LD_DIR && git checkout -b stable origin/stable
 }
 
@@ -383,50 +384,64 @@ push_haskell_latest_manifest_rq() {
 
 # -----------------------------------------------------------------------------
 
+HSTREAM_TAG="v0.16.0"
+
 _build_hstream() {
     cd $HSTREAM_DIR
-    builder_image="$1"
+    hs_image="$1"
     ld_image="$2"
+    tag="$3"
     git_tag="$(git describe --tag --abbrev=0)"
     git_commit="$(git rev-parse HEAD)"
+    # TODO
+    if [ "$ARCH" = "x86_64" ]; then
+        build_cache="cache"
+    else
+        build_cache="no_cache"
+    fi
     docker build . -f docker/Dockerfile \
-        --build-arg BUILDER_IMAGE=$builder_image \
+        --build-arg HS_IMAGE=$hs_image \
         --build-arg LD_IMAGE=$ld_image \
+        --build-arg BUILD_CACHE=$build_cache \
         --build-arg HSTREAM_VERSION=$git_tag \
         --build-arg HSTREAM_VERSION_COMMIT=$git_commit \
-        -t hstreamdb/hstream:$git_tag
+        -t hstreamdb/hstream:$tag
 }
 
 build_hstream() {
-    _build_hstream "hstreamdb/haskell:9.2" "hstreamdb/logdevice:latest"
+    _build_hstream "hstreamdb/haskell:9.2" "hstreamdb/logdevice:latest" "${HSTREAM_TAG}_$ARCH"
 }
 build_hstream_rq() {
-    _build_hstream "hstreamdb/haskell:rqlite_9.2" "hstreamdb/logdevice:rqlite"
+    _build_hstream "hstreamdb/haskell:rqlite_9.2" "hstreamdb/logdevice:rqlite" "rqlite_${HSTREAM_TAG}_$ARCH"
+}
+
+push_hstream() {
+    docker push hstreamdb/hstream:${HSTREAM_TAG}_$ARCH
+}
+
+push_hstream_rq() {
+    docker push hstreamdb/hstream:rqlite_${HSTREAM_TAG}_$ARCH
 }
 
 _pre_push_hstream() {
     tag="$1"
     docker pull hstreamdb/hstream:$tag
-    docker tag hstreamdb/hstream:$tag hstreamdb/hstream:${tag}_$ARCH
-    docker push hstreamdb/hstream:${tag}_$ARCH
+    docker tag hstreamdb/hstream:$tag hstreamdb/hstream:${tag}_x86_64
+    docker push hstreamdb/hstream:${tag}_x86_64
 }
 pre_push_hstream() {
-    _pre_push_hstream "v0.15.2"
-    _pre_push_hstream "rqlite_v0.15.2"
-}
-
-_push_hstream_manifest() {
-    image="hstreamdb/hstream"
-    tag="$1"
-    docker manifest rm $image:$tag || true
-    docker manifest create $image:$tag \
-        $image:${tag}_x86_64 \
-        $image:${tag}_aarch64
-    docker manifest push $image:$tag
+    if [ "$ARCH" = "x86_64" ]; then
+        _pre_push_hstream "$HSTREAM_TAG"
+        _pre_push_hstream "rqlite_$HSTREAM_TAG"
+    else
+        echo "Only for x86_64!"
+        exit 1
+    fi
 }
 
 push_hstream_tag_manifest() {
-    _push_hstream_manifest "v0.15.2"
+    _push_manifest "hstreamdb/hstream" "$HSTREAM_TAG"
+    _push_manifest "hstreamdb/hstream" "rqlite_$HSTREAM_TAG"
 }
 
 # -----------------------------------------------------------------------------
