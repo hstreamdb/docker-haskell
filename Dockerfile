@@ -74,6 +74,10 @@ COPY --from=ghcr.io/hstreamdb/hadmin-store:latest \
     /usr/local/bin/hadmin-store \
     /usr/local/bin/hadmin-store
 
+RUN mkdir -p /etc/bash_completion.d && \
+    grep -wq '^source /etc/profile.d/bash_completion.sh' /etc/bash.bashrc || echo 'source /etc/profile.d/bash_completion.sh' >> /etc/bash.bashrc && \
+    /usr/local/bin/hadmin-store --bash-completion-script /usr/local/bin/hadmin-store > /etc/bash_completion.d/hadmin-store
+
 # ------------------------------------------------------------------------------
 
 ENV LANG C.UTF-8

@@ -376,10 +376,22 @@ _push_haskell_latest_manifest() {
 }
 
 push_haskell_latest_manifest() {
-    _push_haskell_latest_manifest latest 9.2.8
+    ghc=${@:2}
+    if [ -z "$ghc" ]; then
+        echo "Empty ghc"
+        exit 1
+    else
+        _push_haskell_latest_manifest latest $ghc
+    fi
 }
 push_haskell_latest_manifest_rq() {
-    _push_haskell_latest_manifest rqlite "rqlite_9.2.8"
+    ghc=${@:2}
+    if [ -z "$ghc" ]; then
+        echo "Empty ghc"
+        exit 1
+    else
+        _push_haskell_latest_manifest rqlite "rqlite_$ghc"
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -446,4 +458,4 @@ push_hstream_tag_manifest() {
 
 # -----------------------------------------------------------------------------
 
-[ "$1" ] && $1
+[ "$1" ] && $1 $@
