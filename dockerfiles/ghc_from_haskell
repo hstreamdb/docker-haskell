@@ -141,7 +141,6 @@ RUN \
   ./configure --prefix "/opt/ghc/$GHC"; \
   make install; \
   \
-  rm -rf /opt/ghc/$GHC/share/ ; \
   rm -rf "$GNUPGHOME" /tmp/* ; \
   \
   "/opt/ghc/$GHC/bin/ghc" --version
