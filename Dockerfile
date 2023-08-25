@@ -20,6 +20,7 @@ RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
         vim \
         bash-completion \
+        python3 \
         gdb \
         golang-1.16-go \
         libstatgrab-dev && \
