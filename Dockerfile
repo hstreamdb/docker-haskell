@@ -22,10 +22,9 @@ RUN apt-get update && \
         bash-completion \
         python3 \
         gdb \
-        golang-1.16-go \
+        golang \
+        librdkafka-dev \
         libstatgrab-dev && \
-    ln -s /usr/lib/go-1.16/bin/go /usr/bin/go && \
-    ln -s /usr/lib/go-1.16/bin/gofmt /usr/bin/gofmt && \
     grep -wq '^source /etc/profile.d/bash_completion.sh' /etc/bash.bashrc \
         || echo 'source /etc/profile.d/bash_completion.sh' >> /etc/bash.bashrc && \
     rm -rf /var/lib/apt/lists/* && \
@@ -48,7 +47,7 @@ COPY --from=ghcr.io/hstreamdb/grpc:1.54.2 /usr/local/lib/ /usr/local/lib/
 COPY requirements/ /tmp/requirements/
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-      $(cat /tmp/requirements/ubuntu-focal.txt) && \
+      $(cat /tmp/requirements/ubuntu-jammy.txt) && \
     rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 COPY --from=ld_client /usr/local/lib/ /usr/local/lib/

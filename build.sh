@@ -3,11 +3,38 @@ set -ex
 
 # x86_64, aarch64
 ARCH=$(uname -m)
+SUPPORT_ARCH="x86_64 aarch64"
+
 LD_DIR="${LD_DIR:-./LogDevice}"
 HS_DIR="${HS_DIR:-./docker-haskell}"
 HSTREAM_DIR="${HSTREAM_DIR:-./hstream}"
+DOCKER_BIN="${DOCKER_BIN:-docker}"      # e.g. set to podman
 
 # -----------------------------------------------------------------------------
+
+_gen_tag() {
+    tag="$1"
+    arch="$2"
+    if [ -z "$tag" ] || [ "$tag" = "latest" ]; then
+        echo "$arch"
+    else
+        echo "${tag}_$arch"
+    fi
+}
+
+_tag() {
+    image="$1"
+    old_tag="$2"
+    new_tag="$3"
+    for arch in $SUPPORT_ARCH; do
+        old_tag_=$(_gen_tag $old_tag $arch)
+        new_tag_=$(_gen_tag $new_tag $arch)
+
+        $DOCKER_BIN pull $image:$old_tag_
+        $DOCKER_BIN tag $image:$old_tag_ $image:$new_tag_
+        $DOCKER_BIN push $image:$new_tag_
+    done
+}
 
 _push_manifest() {
     image="$1"
@@ -22,9 +49,9 @@ _push_manifest() {
         tag_x86="x86_64"
         tag_arm="aarch64"
     fi
-    docker manifest rm $image:$tag || true
-    docker manifest create $image:$tag $image:$tag_x86 $image:$tag_arm
-    docker manifest push $image:$tag
+    $DOCKER_BIN manifest rm $image:$tag || true
+    $DOCKER_BIN manifest create $image:$tag $image:$tag_x86 $image:$tag_arm
+    $DOCKER_BIN manifest push $image:$tag
 }
 
 # -----------------------------------------------------------------------------
@@ -41,46 +68,63 @@ setup() {
 build_logdevice_builder() {
     cd $LD_DIR
     git checkout stable
-    docker build . -f docker/Dockerfile.builder --tag hstreamdb/logdevice-builder:$ARCH
+    $DOCKER_BIN build . -f docker/Dockerfile.builder --tag hstreamdb/logdevice-builder:$ARCH
 }
 
 push_logdevice_builder() {
-    docker push hstreamdb/logdevice-builder:$ARCH
+    $DOCKER_BIN push hstreamdb/logdevice-builder:$ARCH
 }
 
 push_logdevice_builder_manifest() {
-    docker manifest rm hstreamdb/logdevice-builder || true
-    docker manifest create hstreamdb/logdevice-builder \
+    $DOCKER_BIN manifest rm hstreamdb/logdevice-builder || true
+    $DOCKER_BIN manifest create hstreamdb/logdevice-builder \
         hstreamdb/logdevice-builder:x86_64 \
         hstreamdb/logdevice-builder:aarch64
-    docker manifest push hstreamdb/logdevice-builder
+    $DOCKER_BIN manifest push hstreamdb/logdevice-builder
+}
+
+tag_logdevice_builder() {
+    old_tag="latest"
+    new_tag="v3.3.0"
+    _tag hstreamdb/logdevice-builder $old_tag $new_tag
+    _push_manifest "hstreamdb/logdevice-builder" "$new_tag"
 }
 
 build_logdevice() {
     cd $LD_DIR
     git checkout stable
-    docker build . -f docker/Dockerfile --tag hstreamdb/logdevice:$ARCH
-    docker build . -f docker/Dockerfile --tag hstreamdb/logdevice-client:$ARCH --target client
+    $DOCKER_BIN build . -f docker/Dockerfile --tag hstreamdb/logdevice:$ARCH
+    $DOCKER_BIN build . -f docker/Dockerfile --tag hstreamdb/logdevice-client:$ARCH --target client
 }
 
 push_logdevice() {
-    docker push hstreamdb/logdevice:$ARCH
-    docker push hstreamdb/logdevice-client:$ARCH
+    $DOCKER_BIN push hstreamdb/logdevice:$ARCH
+    $DOCKER_BIN push hstreamdb/logdevice-client:$ARCH
 }
 
 push_logdevice_manifest() {
-    docker manifest rm hstreamdb/logdevice || true
-    docker manifest rm hstreamdb/logdevice-client || true
+    $DOCKER_BIN manifest rm hstreamdb/logdevice || true
+    $DOCKER_BIN manifest rm hstreamdb/logdevice-client || true
 
-    docker manifest create hstreamdb/logdevice \
+    $DOCKER_BIN manifest create hstreamdb/logdevice \
         hstreamdb/logdevice:x86_64 \
         hstreamdb/logdevice:aarch64
-    docker manifest push hstreamdb/logdevice
+    $DOCKER_BIN manifest push hstreamdb/logdevice
 
-    docker manifest create hstreamdb/logdevice-client \
+    $DOCKER_BIN manifest create hstreamdb/logdevice-client \
         hstreamdb/logdevice-client:x86_64 \
         hstreamdb/logdevice-client:aarch64
-    docker manifest push hstreamdb/logdevice-client
+    $DOCKER_BIN manifest push hstreamdb/logdevice-client
+}
+
+tag_logdevice() {
+    old_tag="latest"
+    new_tag="v3.3.0"
+    _tag hstreamdb/logdevice $old_tag $new_tag
+    _push_manifest hstreamdb/logdevice $new_tag
+
+    _tag hstreamdb/logdevice-client $old_tag $new_tag
+    _push_manifest hstreamdb/logdevice-client $new_tag
 }
 
 # -----------------------------------------------------------------------------
@@ -88,46 +132,36 @@ push_logdevice_manifest() {
 build_logdevice_builder_rq() {
     cd $LD_DIR
     git checkout main
-    docker build . -f docker/Dockerfile.builder --tag hstreamdb/logdevice-builder:rqlite:$ARCH
+    $DOCKER_BIN build . -f docker/Dockerfile.builder --tag hstreamdb/logdevice-builder:rqlite_$ARCH
 }
 
 push_logdevice_builder_rq() {
-    docker push hstreamdb/logdevice-builder:rqlite_$ARCH
+    $DOCKER_BIN push hstreamdb/logdevice-builder:rqlite_$ARCH
 }
 
 push_logdevice_builder_manifest_rq() {
-    docker manifest rm hstreamdb/logdevice-builder:rqlite || true
-    docker manifest create hstreamdb/logdevice-builder:rqlite \
+    $DOCKER_BIN manifest rm hstreamdb/logdevice-builder:rqlite || true
+    $DOCKER_BIN manifest create hstreamdb/logdevice-builder:rqlite \
         hstreamdb/logdevice-builder:rqlite_x86_64 \
         hstreamdb/logdevice-builder:rqlite_aarch64
-    docker manifest push hstreamdb/logdevice-builder:rqlite
+    $DOCKER_BIN manifest push hstreamdb/logdevice-builder:rqlite
 }
 
 build_logdevice_rq() {
     cd $LD_DIR
     git checkout main
-    docker build . -f docker/Dockerfile --tag hstreamdb/logdevice:rqlite_$ARCH
-    docker build . -f docker/Dockerfile --tag hstreamdb/logdevice-client:rqlite_$ARCH --target client
+    $DOCKER_BIN build . -f docker/Dockerfile --tag hstreamdb/logdevice:rqlite_$ARCH
+    $DOCKER_BIN build . -f docker/Dockerfile --tag hstreamdb/logdevice-client:rqlite_$ARCH --target client
 }
 
 push_logdevice_rq() {
-    docker push hstreamdb/logdevice:rqlite_$ARCH
-    docker push hstreamdb/logdevice-client:rqlite_$ARCH
+    $DOCKER_BIN push hstreamdb/logdevice:rqlite_$ARCH
+    $DOCKER_BIN push hstreamdb/logdevice-client:rqlite_$ARCH
 }
 
 push_logdevice_manifest_rq() {
-    docker manifest rm hstreamdb/logdevice:rqlite || true
-    docker manifest rm hstreamdb/logdevice-client:rqlite || true
-
-    docker manifest create hstreamdb/logdevice:rqlite \
-        hstreamdb/logdevice:rqlite_x86_64 \
-        hstreamdb/logdevice:rqlite_aarch64
-    docker manifest push hstreamdb/logdevice:rqlite
-
-    docker manifest create hstreamdb/logdevice-client:rqlite \
-        hstreamdb/logdevice-client:rqlite_x86_64 \
-        hstreamdb/logdevice-client:rqlite_aarch64
-    docker manifest push hstreamdb/logdevice-client:rqlite
+    _push_manifest "hstreamdb/logdevice" "rqlite"
+    _push_manifest "hstreamdb/logdevice-client" "rqlite"
 }
 
 # -----------------------------------------------------------------------------
@@ -136,13 +170,13 @@ GRPC=${GRPC:-1.54.2}
 
 build_grpc() {
     cd $HS_DIR
-    docker build . -f dockerfiles/grpc \
+    $DOCKER_BIN build . -f dockerfiles/grpc \
         --build-arg GRPC=v${GRPC} \
         -t ghcr.io/hstreamdb/grpc:${GRPC}_$ARCH
 }
 
 push_grpc() {
-    docker push ghcr.io/hstreamdb/grpc:${GRPC}_$ARCH
+    $DOCKER_BIN push ghcr.io/hstreamdb/grpc:${GRPC}_$ARCH
 }
 
 push_grpc_manifest() {
@@ -156,7 +190,7 @@ _build_ghc() {
     build_ghc="$1"  # e.g. 9.2.8
     tag="$2"  # e.g. 9.2.8
     tag1="$3" # e.g. 9.2
-    docker build . -f dockerfiles/ghc_from_haskell \
+    $DOCKER_BIN build . -f dockerfiles/ghc_from_haskell \
         --build-arg GHC=$build_ghc \
         -t ghcr.io/hstreamdb/ghc:${tag}_$ARCH \
         -t ghcr.io/hstreamdb/ghc:${tag1}_$ARCH
@@ -165,36 +199,36 @@ _build_ghc() {
 _push_ghc() {
     tag="$1"  # e.g. 9.2.8
     tag1="$2" # e.g. 9.2
-    docker push ghcr.io/hstreamdb/ghc:${tag}_$ARCH
-    docker push ghcr.io/hstreamdb/ghc:${tag1}_$ARCH
+    $DOCKER_BIN push ghcr.io/hstreamdb/ghc:${tag}_$ARCH
+    $DOCKER_BIN push ghcr.io/hstreamdb/ghc:${tag1}_$ARCH
 }
 
 _push_ghc_manifest() {
     tag="$1"  # e.g. 9.2.8
     tag1="$2" # e.g. 9.2
-    docker manifest rm ghcr.io/hstreamdb/ghc:$tag || true
-    docker manifest rm ghcr.io/hstreamdb/ghc:$tag1 || true
+    $DOCKER_BIN manifest rm ghcr.io/hstreamdb/ghc:$tag || true
+    $DOCKER_BIN manifest rm ghcr.io/hstreamdb/ghc:$tag1 || true
 
-    docker manifest create ghcr.io/hstreamdb/ghc:$tag \
+    $DOCKER_BIN manifest create ghcr.io/hstreamdb/ghc:$tag \
         ghcr.io/hstreamdb/ghc:${tag}_x86_64 \
         ghcr.io/hstreamdb/ghc:${tag}_aarch64
-    docker manifest create ghcr.io/hstreamdb/ghc:$tag1 \
+    $DOCKER_BIN manifest create ghcr.io/hstreamdb/ghc:$tag1 \
         ghcr.io/hstreamdb/ghc:${tag1}_x86_64 \
         ghcr.io/hstreamdb/ghc:${tag1}_aarch64
 
-    docker manifest push ghcr.io/hstreamdb/ghc:$tag
-    docker manifest push ghcr.io/hstreamdb/ghc:$tag1
+    $DOCKER_BIN manifest push ghcr.io/hstreamdb/ghc:$tag
+    $DOCKER_BIN manifest push ghcr.io/hstreamdb/ghc:$tag1
 }
 
 _push_ghc_latest_manifest() {
     tag="$1"  # e.g. 9.2.8
-    docker manifest rm ghcr.io/hstreamdb/ghc || true
+    $DOCKER_BIN manifest rm ghcr.io/hstreamdb/ghc || true
 
-    docker manifest create ghcr.io/hstreamdb/ghc \
+    $DOCKER_BIN manifest create ghcr.io/hstreamdb/ghc \
         ghcr.io/hstreamdb/ghc:${tag}_x86_64 \
         ghcr.io/hstreamdb/ghc:${tag}_aarch64
 
-    docker manifest push ghcr.io/hstreamdb/ghc
+    $DOCKER_BIN manifest push ghcr.io/hstreamdb/ghc
 }
 
 build_ghc810() {
@@ -235,30 +269,30 @@ push_ghc_latest_manifest() {
 
 build_hsthrift() {
     cd $HS_DIR
-    docker build . -f dockerfiles/hsthrift -t ghcr.io/hstreamdb/hsthrift:$ARCH
+    $DOCKER_BIN build . -f dockerfiles/hsthrift -t ghcr.io/hstreamdb/hsthrift:$ARCH
 }
 
 push_hsthrift() {
-    docker push ghcr.io/hstreamdb/hsthrift:$ARCH
+    $DOCKER_BIN push ghcr.io/hstreamdb/hsthrift:$ARCH
 }
 
 push_hsthrift_manifest() {
-    docker manifest rm ghcr.io/hstreamdb/hsthrift || true
-    docker manifest create ghcr.io/hstreamdb/hsthrift \
+    $DOCKER_BIN manifest rm ghcr.io/hstreamdb/hsthrift || true
+    $DOCKER_BIN manifest create ghcr.io/hstreamdb/hsthrift \
         ghcr.io/hstreamdb/hsthrift:x86_64 \
         ghcr.io/hstreamdb/hsthrift:aarch64
-    docker manifest push ghcr.io/hstreamdb/hsthrift
+    $DOCKER_BIN manifest push ghcr.io/hstreamdb/hsthrift
 }
 
 # -----------------------------------------------------------------------------
 
 build_hadmin_store() {
     cd $HS_DIR
-    docker build . -f dockerfiles/hadmin_store -t ghcr.io/hstreamdb/hadmin-store:$ARCH
+    $DOCKER_BIN build . -f dockerfiles/hadmin_store -t ghcr.io/hstreamdb/hadmin-store:$ARCH
 }
 
 push_hadmin_store() {
-    docker push ghcr.io/hstreamdb/hadmin-store:$ARCH
+    $DOCKER_BIN push ghcr.io/hstreamdb/hadmin-store:$ARCH
 }
 
 push_hadmin_store_manifest() {
@@ -273,7 +307,7 @@ _build_haskell() {
     ld_client="$2"
     tag="$3"
     tag1="$4"
-    docker build . -f Dockerfile \
+    $DOCKER_BIN build . -f Dockerfile \
         --build-arg GHC=$ghc \
         --build-arg LD_CLIENT_IMAGE=$ld_client \
         --tag hstreamdb/haskell:${tag}_$ARCH \
@@ -303,8 +337,8 @@ build_haskell904_rq() {
 _push_haskell() {
     tag="$1"
     tag1="$2"
-    docker push hstreamdb/haskell:${tag}_$ARCH
-    docker push hstreamdb/haskell:${tag1}_$ARCH
+    $DOCKER_BIN push hstreamdb/haskell:${tag}_$ARCH
+    $DOCKER_BIN push hstreamdb/haskell:${tag1}_$ARCH
 }
 
 push_haskell810() {
@@ -330,17 +364,17 @@ _push_haskell_manifest(){
     image="hstreamdb/haskell"
     tag="$1"
     tag1="$2"
-    docker manifest rm $image:$tag || true
-    docker manifest create $image:$tag \
+    $DOCKER_BIN manifest rm $image:$tag || true
+    $DOCKER_BIN manifest create $image:$tag \
         $image:${tag}_x86_64 \
         $image:${tag}_aarch64
-    docker manifest push $image:$tag
+    $DOCKER_BIN manifest push $image:$tag
 
-    docker manifest rm $image:$tag1 || true
-    docker manifest create $image:$tag1 \
+    $DOCKER_BIN manifest rm $image:$tag1 || true
+    $DOCKER_BIN manifest create $image:$tag1 \
         $image:${tag1}_x86_64 \
         $image:${tag1}_aarch64
-    docker manifest push $image:$tag1
+    $DOCKER_BIN manifest push $image:$tag1
 }
 
 push_haskell810_manifest() {
@@ -368,11 +402,11 @@ _push_haskell_latest_manifest() {
     tag="$1"
     ghc="$2"
 
-    docker manifest rm $image:$tag || true
-    docker manifest create $image:$tag \
+    $DOCKER_BIN manifest rm $image:$tag || true
+    $DOCKER_BIN manifest create $image:$tag \
         $image:${ghc}_x86_64 \
         $image:${ghc}_aarch64
-    docker manifest push $image:$tag
+    $DOCKER_BIN manifest push $image:$tag
 }
 
 push_haskell_latest_manifest() {
@@ -402,44 +436,71 @@ _build_hstream() {
     cd $HSTREAM_DIR
     hs_image="$1"
     ld_image="$2"
-    tag="$3"
+    image="$3"
+    tag="$4"
+    target="$5"
     git_tag="$(git describe --tag --abbrev=0)"
     git_commit="$(git rev-parse HEAD)"
-    # TODO
+    # TODO: divede to x86_64 and aarch64
     if [ "$ARCH" = "x86_64" ]; then
         build_cache="cache"
     else
         build_cache="no_cache"
     fi
-    docker build . -f docker/Dockerfile \
+    if [ -n "$target" ]; then
+        target_arg="--target $target"
+    else
+        target_arg=""
+    fi
+    $DOCKER_BIN build . -f docker/Dockerfile \
         --build-arg HS_IMAGE=$hs_image \
         --build-arg LD_IMAGE=$ld_image \
         --build-arg BUILD_CACHE=$build_cache \
         --build-arg HSTREAM_VERSION=$git_tag \
         --build-arg HSTREAM_VERSION_COMMIT=$git_commit \
-        -t hstreamdb/hstream:$tag
+        $target_arg \
+        -t $image:$tag
+}
+
+rebuild_hstream_builder() {
+    cd $HSTREAM_DIR
+    hs_image="hstreamdb/haskell:9.2"
+    ld_image="hstreamdb/logdevice:latest"
+    git_tag="$(git describe --tag --abbrev=0)"
+    git_commit="$(git rev-parse HEAD)"
+    $DOCKER_BIN build . -f docker/Dockerfile \
+        --build-arg HS_IMAGE=$hs_image \
+        --build-arg LD_IMAGE=$ld_image \
+        --build-arg BUILD_CACHE="no_cache" \
+        --build-arg HSTREAM_VERSION=$git_tag \
+        --build-arg HSTREAM_VERSION_COMMIT=$git_commit \
+        --target builder \
+        -t hstreamdb/hstream-builder
 }
 
 build_hstream() {
-    _build_hstream "hstreamdb/haskell:9.2" "hstreamdb/logdevice:latest" "${HSTREAM_TAG}_$ARCH"
+    _build_hstream "hstreamdb/haskell:9.2" "hstreamdb/logdevice:latest" \
+       "hstreamdb/hstream" "${HSTREAM_TAG}_$ARCH" ""
 }
+
 build_hstream_rq() {
-    _build_hstream "hstreamdb/haskell:rqlite_9.2" "hstreamdb/logdevice:rqlite" "rqlite_${HSTREAM_TAG}_$ARCH"
+    _build_hstream "hstreamdb/haskell:rqlite_9.2" "hstreamdb/logdevice:rqlite" \
+       "hstreamdb/hstream" "rqlite_${HSTREAM_TAG}_$ARCH" ""
 }
 
 push_hstream() {
-    docker push hstreamdb/hstream:${HSTREAM_TAG}_$ARCH
+    $DOCKER_BIN push hstreamdb/hstream:${HSTREAM_TAG}_$ARCH
 }
 
 push_hstream_rq() {
-    docker push hstreamdb/hstream:rqlite_${HSTREAM_TAG}_$ARCH
+    $DOCKER_BIN push hstreamdb/hstream:rqlite_${HSTREAM_TAG}_$ARCH
 }
 
 _pre_push_hstream() {
     tag="$1"
-    docker pull hstreamdb/hstream:$tag
-    docker tag hstreamdb/hstream:$tag hstreamdb/hstream:${tag}_x86_64
-    docker push hstreamdb/hstream:${tag}_x86_64
+    $DOCKER_BIN pull hstreamdb/hstream:$tag
+    $DOCKER_BIN tag hstreamdb/hstream:$tag hstreamdb/hstream:${tag}_x86_64
+    $DOCKER_BIN push hstreamdb/hstream:${tag}_x86_64
 }
 pre_push_hstream() {
     if [ "$ARCH" = "x86_64" ]; then

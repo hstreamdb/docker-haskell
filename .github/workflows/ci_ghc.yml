@@ -28,24 +28,11 @@ jobs:
   build-ghc-haskell:
     runs-on: ubuntu-latest
     needs: init-ghc-haskell
-    name: build-ghc-haskell (${{ matrix.platform }}, ${{ matrix.ghc }})
+    name: build-ghc-${{ matrix.ghc }}
     if: ${{ needs.init-ghc-haskell.outputs.skip == 'false' }}
     strategy:
       matrix:
-        include:
-          # FIXME: disable arm64 builds since it's too slow on ci
-          # platform: linux/amd64,linux/arm64
-          - platform: linux/amd64
-            ghc: 8.10.7
-            tag: 8.10.7:8.10
-
-          - platform: linux/amd64
-            ghc: 9.2.7
-            tag: 9.2.7:9.2:latest
-
-          - platform: linux/amd64
-            ghc: 9.4.5
-            tag: 9.4.5:9.4
+        ghc: [ghc810, ghc902, ghc904]
 
     steps:
       - uses: actions/checkout@v3
@@ -57,21 +44,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Build
-        uses: ./.github/actions/docker-haskell
-        with:
-          image-name: ghcr.io/hstreamdb/ghc
-          dockerfile: dockerfiles/ghc_from_haskell
-          platform: ${{ matrix.platform }}
-          tag: ${{ matrix.tag }}
-          kargs-key: GHC
-          kargs-value: ${{ matrix.ghc }}
+      - name: build & push images
+        run: |
+          HS_DIR='.' ./build.sh build_${{ matrix.ghc }}
+          HS_DIR='.' ./build.sh push_${{ matrix.ghc }}
+          HS_DIR='.' ./build.sh push_${{ matrix.ghc }}_manifest
+          if [ "${{ matrix.ghc }}" == "ghc902" ]; then
+            HS_DIR='.' ./build.sh push_ghc_latest_manifest
+          fi
 
   # ----------------------
 # XXX: Unused

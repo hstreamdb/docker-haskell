@@ -19,23 +19,21 @@ jobs:
     outputs:
       skip: ${{ steps.check-if-skip.outputs.skip }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - id: check-if-skip
-        run: |
-          if sha256sum -c checksum/hsthrift.sha256sum --status; then
-            echo "::set-output name=skip::true"
-          else
-            echo "::set-output name=skip::false"
-          fi
+      - name: check-if-skip
+        id: check-if-skip
+        uses: ./.github/actions/check-if-skip
+        with:
+          checksum-file: checksum/hsthrift.sha256sum
 
   build:
     needs: init
     if: ${{ needs.init.outputs.skip == 'false' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: "recursive"
 

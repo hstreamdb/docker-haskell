@@ -9,7 +9,7 @@ ENV PKG_CONFIG_PATH /usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 COPY requirements/ /tmp/requirements/
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-      $(cat /tmp/requirements/ubuntu-focal.txt) && \
+      $(cat /tmp/requirements/ubuntu-jammy.txt) && \
     rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 COPY --from=hstreamdb/logdevice-client:latest /usr/local/bin/thrift1 /usr/local/bin/
@@ -25,11 +25,12 @@ RUN git clone --recurse-submodules --depth 1 --shallow-submodules \
     cd /hsthrift && make thrift-cpp && \
     cabal build -j${PARALLEL:-$(nproc)} exe:$EXE_COMPONENT && \
     cp $(cabal exec -- which $EXE_COMPONENT | grep $EXE_COMPONENT) /usr/local/bin/ && \
+    /usr/local/bin/thrift-compiler --help && \
     rm -rf /hsthrift /root/.cabal
 
 # ------------------------------------------------------------------------------
 
-FROM ubuntu:focal
+FROM ubuntu:jammy
 
 COPY --from=builder /usr/local/bin/thrift-compiler /usr/local/bin/thrift-compiler
 
