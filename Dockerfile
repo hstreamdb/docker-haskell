@@ -24,7 +24,8 @@ RUN apt-get update && \
         gdb \
         golang \
         librdkafka-dev \
-        libstatgrab-dev && \
+        libstatgrab-dev \
+        libgsasl7-dev && \
     grep -wq '^source /etc/profile.d/bash_completion.sh' /etc/bash.bashrc \
         || echo 'source /etc/profile.d/bash_completion.sh' >> /etc/bash.bashrc && \
     rm -rf /var/lib/apt/lists/* && \
