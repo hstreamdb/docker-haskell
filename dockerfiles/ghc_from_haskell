@@ -68,7 +68,7 @@ RUN \
   \
   cabal --version
 
-ARG GHC=9.2.5
+ARG GHC=9.2.8
 # Note that this key is not for ghc9.4+
 ARG GHC_RELEASE_KEY=88B57FCF7DB53B4DB3BFA4B1588764FBE22D19C4
 
@@ -97,9 +97,9 @@ RUN \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
           GHC_SHA256='645433359d8ad9e7b286f85ef5111db1b787ee3712c24c5dfde7c62769aa59a4'; \
           ;; \
-        '9.4.5') \
+        '9.4.8') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
-          GHC_SHA256='ecf16ec503e739e727174b29e5acbe4cf0c54737dd4d5eda046e09323f9ee248'; \
+          GHC_SHA256='278e287e1ee624712b9c6d7803d1cf915ca1cce56e013b0a16215eb8dfeb1531'; \
           GHC_RELEASE_KEY='88b57fcf7db53b4db3bfa4b1588764fbe22d19c4'; \
           GHC_EXTRACT_NAME="ghc-$GHC-$ARCH-unknown-linux"; \
           ;; \
@@ -116,9 +116,9 @@ RUN \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-ubuntu20.04-linux.tar.xz"; \
           GHC_SHA256='6e4adc184a53ca9d9dd8c11c6611d0643fdc3b76550ae769e378d9edb2bda745'; \
           ;; \
-        '9.4.5') \
+        '9.4.8') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb11-linux.tar.xz"; \
-          GHC_SHA256='561ccb6b155672f5077fd79daf13a862710049202c7448ce82ee2ee1d9063bc7'; \
+          GHC_SHA256='2743629d040f3213499146cb5154621d6f25e85271019afc9b9009e04d66bf6c'; \
           GHC_RELEASE_KEY='88b57fcf7db53b4db3bfa4b1588764fbe22d19c4'; \
           GHC_EXTRACT_NAME="ghc-$GHC-$ARCH-unknown-linux"; \
           ;; \

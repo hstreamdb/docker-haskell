@@ -50,7 +50,7 @@ jobs:
           HS_DIR='.' ./build.sh push_${{ matrix.ghc }}
           HS_DIR='.' ./build.sh push_${{ matrix.ghc }}_manifest
           if [ "${{ matrix.ghc }}" == "ghc902" ]; then
-            HS_DIR='.' ./build.sh push_ghc_latest_manifest
+            HS_DIR='.' ./build.sh push_ghc_latest_manifest 9.2.8
           fi
 
   # ----------------------

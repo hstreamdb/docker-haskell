@@ -50,7 +50,10 @@ _push_manifest() {
         tag_arm="aarch64"
     fi
     $DOCKER_BIN manifest rm $image:$tag || true
-    $DOCKER_BIN manifest create $image:$tag $image:$tag_x86 $image:$tag_arm
+    manifests="$image:${tag_x86}"
+    [ "$(docker pull $image:${tag_arm})" ] && \
+        manifests="$manifests $image:${tag_arm}" || true
+    $DOCKER_BIN manifest create $image:$tag $manifests
     $DOCKER_BIN manifest push $image:$tag
 }
 
@@ -203,23 +206,6 @@ _push_ghc() {
     $DOCKER_BIN push ghcr.io/hstreamdb/ghc:${tag1}_$ARCH
 }
 
-_push_ghc_manifest() {
-    tag="$1"  # e.g. 9.2.8
-    tag1="$2" # e.g. 9.2
-    $DOCKER_BIN manifest rm ghcr.io/hstreamdb/ghc:$tag || true
-    $DOCKER_BIN manifest rm ghcr.io/hstreamdb/ghc:$tag1 || true
-
-    $DOCKER_BIN manifest create ghcr.io/hstreamdb/ghc:$tag \
-        ghcr.io/hstreamdb/ghc:${tag}_x86_64 \
-        ghcr.io/hstreamdb/ghc:${tag}_aarch64
-    $DOCKER_BIN manifest create ghcr.io/hstreamdb/ghc:$tag1 \
-        ghcr.io/hstreamdb/ghc:${tag1}_x86_64 \
-        ghcr.io/hstreamdb/ghc:${tag1}_aarch64
-
-    $DOCKER_BIN manifest push ghcr.io/hstreamdb/ghc:$tag
-    $DOCKER_BIN manifest push ghcr.io/hstreamdb/ghc:$tag1
-}
-
 _push_ghc_latest_manifest() {
     tag="$1"  # e.g. 9.2.8
     $DOCKER_BIN manifest rm ghcr.io/hstreamdb/ghc || true
@@ -238,7 +224,7 @@ build_ghc902() {
     _build_ghc 9.2.8 9.2.8 9.2
 }
 build_ghc904() {
-    _build_ghc 9.4.5 9.4.5 9.4
+    _build_ghc 9.4.8 9.4.8 9.4
 }
 
 push_ghc810() {
@@ -248,21 +234,30 @@ push_ghc902() {
     _push_ghc 9.2.8 9.2
 }
 push_ghc904() {
-    _push_ghc 9.4.5 9.4
+    _push_ghc 9.4.8 9.4
 }
 
 push_ghc810_manifest() {
-    _push_ghc_manifest 8.10.7 8.10
+    _push_manifest ghcr.io/hstreamdb/ghc 8.10.7
+    _push_manifest ghcr.io/hstreamdb/ghc 8.10
 }
 push_ghc902_manifest() {
-    _push_ghc_manifest 9.2.8 9.2
+    _push_manifest ghcr.io/hstreamdb/ghc 9.2.8
+    _push_manifest ghcr.io/hstreamdb/ghc 9.2
 }
 push_ghc904_manifest() {
-    _push_ghc_manifest 9.4.5 9.4
+    _push_manifest ghcr.io/hstreamdb/ghc 9.4.8
+    _push_manifest ghcr.io/hstreamdb/ghc 9.4
 }
 
 push_ghc_latest_manifest() {
-    _push_ghc_latest_manifest 9.2.8
+    ghc=${@:2}
+    if [ -z "$ghc" ]; then
+        echo "Empty ghc"
+        exit 1
+    else
+        _push_ghc_latest_manifest $ghc
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -321,7 +316,7 @@ build_haskell902() {
     _build_haskell 9.2.8 hstreamdb/logdevice-client 9.2.8 9.2
 }
 build_haskell904() {
-    _build_haskell 9.4.5 hstreamdb/logdevice-client 9.4.5 9.4
+    _build_haskell 9.4.8 hstreamdb/logdevice-client 9.4.8 9.4
 }
 
 build_haskell810_rq() {
@@ -331,7 +326,7 @@ build_haskell902_rq() {
     _build_haskell 9.2.8 hstreamdb/logdevice-client:rqlite "rqlite_9.2.8" "rqlite_9.2"
 }
 build_haskell904_rq() {
-    _build_haskell 9.4.5 hstreamdb/logdevice-client:rqlite "rqlite_9.4.5" "rqlite_9.4"
+    _build_haskell 9.4.8 hstreamdb/logdevice-client:rqlite "rqlite_9.4.8" "rqlite_9.4"
 }
 
 _push_haskell() {
@@ -348,7 +343,7 @@ push_haskell902() {
     _push_haskell 9.2.8 9.2
 }
 push_haskell904() {
-    _push_haskell 9.4.5 9.4
+    _push_haskell 9.4.8 9.4
 }
 push_haskell810_rq() {
     _push_haskell "rqlite_8.10.7" "rqlite_8.10"
@@ -357,7 +352,7 @@ push_haskell902_rq() {
     _push_haskell "rqlite_9.2.8" "rqlite_9.2"
 }
 push_haskell904_rq() {
-    _push_haskell "rqlite_9.4.5" "rqlite_9.4"
+    _push_haskell "rqlite_9.4.8" "rqlite_9.4"
 }
 
 _push_haskell_manifest(){
@@ -378,23 +373,29 @@ _push_haskell_manifest(){
 }
 
 push_haskell810_manifest() {
-    _push_haskell_manifest 8.10.7 8.10
+    _push_manifest hstreamdb/haskell 8.10.7
+    _push_manifest hstreamdb/haskell 8.10
 }
 push_haskell902_manifest() {
-    _push_haskell_manifest 9.2.8 9.2
+    _push_manifest hstreamdb/haskell 9.2.8
+    _push_manifest hstreamdb/haskell 9.2
 }
 push_haskell904_manifest() {
-    _push_haskell_manifest 9.4.5 9.4
+    _push_manifest hstreamdb/haskell 9.4.8
+    _push_manifest hstreamdb/haskell 9.4
 }
 
 push_haskell810_manifest_rq() {
-    _push_haskell_manifest "rqlite_8.10.7" "rqlite_8.10"
+    _push_manifest hstreamdb/haskell "rqlite_8.10.7"
+    _push_manifest hstreamdb/haskell "rqlite_8.10"
 }
 push_haskell902_manifest_rq() {
-    _push_haskell_manifest "rqlite_9.2.8" "rqlite_9.2"
+    _push_manifest hstreamdb/haskell "rqlite_9.2.8"
+    _push_manifest hstreamdb/haskell "rqlite_9.2"
 }
 push_haskell904_manifest_rq() {
-    _push_haskell_manifest "rqlite_9.4.5" "rqlite_9.4"
+    _push_manifest hstreamdb/haskell "rqlite_9.4.8"
+    _push_manifest hstreamdb/haskell "rqlite_9.4"
 }
 
 _push_haskell_latest_manifest() {
