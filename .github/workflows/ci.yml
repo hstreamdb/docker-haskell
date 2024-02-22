@@ -52,8 +52,8 @@ jobs:
           HS_DIR='.' ./build.sh push_haskell${{ matrix.ghc }}_manifest
           HS_DIR='.' ./build.sh push_haskell${{ matrix.ghc }}_manifest_rq
 
-          if [ "${{ matrix.ghc }}" = "902" ]; then
+          if [ "${{ matrix.ghc }}" = "904" ]; then
             echo "Push latest"
-            HS_DIR='.' ./build.sh push_haskell_latest_manifest 9.2.8
-            HS_DIR='.' ./build.sh push_haskell_latest_manifest_rq 9.2.8
+            HS_DIR='.' ./build.sh push_haskell_latest_manifest 9.4.8
+            HS_DIR='.' ./build.sh push_haskell_latest_manifest_rq 9.4.8
           fi
