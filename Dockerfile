@@ -48,13 +48,13 @@ COPY --from=ghcr.io/hstreamdb/grpc:1.54.2 /usr/local/lib/ /usr/local/lib/
 COPY requirements/ /tmp/requirements/
 RUN apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-      $(cat /tmp/requirements/ubuntu-jammy.txt) && \
+      $(cat /tmp/requirements/ubuntu-jammy.txt) libjemalloc2 && \
     rm -rf /tmp/requirements && rm -rf /var/lib/apt/lists/* && apt-get clean
 
 COPY --from=ld_client /usr/local/lib/ /usr/local/lib/
 COPY --from=ld_client /usr/local/include/ /usr/local/include/
-COPY --from=ld_client /usr/lib/libjemalloc.so.2 /usr/lib/
-RUN ln -sr /usr/lib/libjemalloc.so.2 /usr/lib/libjemalloc.so && \
+
+RUN \
     [ -f "/usr/local/include/thrift/lib/thrift/gen-cpp2/RpcMetadata_types.h" ] &&  \
     # temporary fix of "cabal build --enable-profiling" \
     sed -i '/^#pragma once/a #ifdef PROFILING\n#undef PROFILING\n#endif' /usr/local/include/thrift/lib/thrift/gen-cpp2/RpcMetadata_types.h

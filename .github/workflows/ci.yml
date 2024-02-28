@@ -2,6 +2,15 @@ name: haskell
 
 on:
   workflow_dispatch:
+    inputs:
+      ghc:
+        description: "ghc version"
+        required: true
+        default: "904"
+        type: choice
+        options:
+          - 810
+          - 904
 
 jobs:
   build:
@@ -22,4 +31,5 @@ jobs:
 
       - name: Build & Push images
         run: |
-          HS_DIR='.' ./build.sh haskell
+          HS_DIR='.' ./build.sh haskell${{ inputs.ghc }}
+          HS_DIR='.' ./build.sh haskell${{ inputs.ghc }}_rqlite
