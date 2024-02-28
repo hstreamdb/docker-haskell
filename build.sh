@@ -61,25 +61,30 @@ _buildx() {
     dockerfile="$1"
     image_name="$2"
     target="$3"
-    tag="$4"
+    tags="$4" # can be multiple, e.g. "tag1 tag2"
+    # Optional
+    build_args="$5"
+
     test -n "$target" && target="--target $target"
     metadata_file=$(mktemp)
 
     # build and push digest
     docker buildx build \
         --file $dockerfile \
-        $target \
+        $target $build_args \
         --output type=image,name=$image_name,push-by-digest=true,name-canonical=true,push=true \
         --metadata-file $metadata_file \
         .
     digest=$(python3 -c "import json; d = json.load(open('$metadata_file')); print(d['containerimage.digest'])")
 
-    # writes to local image store, so it will appear in `docker images`
-    docker buildx build \
-        --file $dockerfile $target \
-        --output type=docker,name=$image_name:$tag .
+    # [Optional] writes to local image store, so it will appear in `docker images`
+    for tag in $tags; do
+        docker buildx build \
+            --file $dockerfile $target $build_args \
+            --output type=docker,name=$image_name:$tag .
+    done
 
-    # create tag from digests
+    # Push tag from digests
     #
     # TODO: update digest for the architecture
     #
@@ -90,8 +95,11 @@ _buildx() {
     #   if m['platform']['architecture'] == ...
     # "
     # x=$(python3 -c "$parse_manifests")
+    for tag in $tags; do
+        tag_param="$tag_param --tag $image_name:$tag"
+    done
     docker buildx imagetools create \
-        --tag $image_name:$tag \
+        $tag_param \
         $image_name@$digest
 }
 
@@ -150,6 +158,45 @@ hadmin_store() {
     cd $HS_DIR
     _buildx "dockerfiles/hadmin_store" "ghcr.io/hstreamdb/hadmin-store" "" "latest"
 }
+
+haskell() {
+    haskell810
+    haskell810_rqlite
+
+    haskell904
+    haskell904_rqlite
+}
+
+haskell810() {
+    cd $HS_DIR
+    _buildx "Dockerfile" "hstreamdb/haskell" \
+        "" "8.10.7 8.10" \
+        "--build-arg GHC=8.10.7 --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client"
+}
+
+haskell810_rqlite() {
+    cd $HS_DIR
+    _buildx "Dockerfile" "hstreamdb/haskell" \
+        "" "rqlite_8.10.7 rqlite_8.10" \
+        "--build-arg GHC=8.10.7 --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client:rqlite"
+}
+
+haskell904() {
+    cd $HS_DIR
+    _buildx "Dockerfile" "hstreamdb/haskell" \
+        "" "9.4.8 9.4 latest" \
+        "--build-arg GHC=9.4.8 --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client"
+}
+
+haskell904_rqlite() {
+    cd $HS_DIR
+    _buildx "Dockerfile" "hstreamdb/haskell" \
+        "" "rqlite_9.4.8 rqlite_9.4 rqlite" \
+        "--build-arg GHC=9.4.8 --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client:rqlite"
+}
+
+# TODO
+# hstream
 
 # -----------------------------------------------------------------------------
 # Outdated
@@ -349,6 +396,7 @@ push_ghc_latest_manifest() {
 }
 
 # -----------------------------------------------------------------------------
+# Outdated, TODO: remove
 
 build_hsthrift() {
     cd $HS_DIR
@@ -368,6 +416,7 @@ push_hsthrift_manifest() {
 }
 
 # -----------------------------------------------------------------------------
+# Outdated, TODO: remove
 
 build_hadmin_store() {
     cd $HS_DIR
