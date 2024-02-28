@@ -11,6 +11,7 @@ on:
         options:
           - 810
           - 904
+          - all
 
 jobs:
   build:
@@ -31,5 +32,9 @@ jobs:
 
       - name: Build & Push images
         run: |
-          HS_DIR='.' ./build.sh haskell${{ inputs.ghc }}
-          HS_DIR='.' ./build.sh haskell${{ inputs.ghc }}_rqlite
+          if [ "${{ inputs.ghc }}" == "all" ]; then
+            HS_DIR='.' ./build.sh haskell
+          else
+            HS_DIR='.' ./build.sh haskell${{ inputs.ghc }}
+            HS_DIR='.' ./build.sh haskell${{ inputs.ghc }}_rqlite
+          fi
