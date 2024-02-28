@@ -146,6 +146,11 @@ hsthrift() {
     _buildx "dockerfiles/hsthrift" "ghcr.io/hstreamdb/hsthrift" "" "latest"
 }
 
+hadmin_store() {
+    cd $HS_DIR
+    _buildx "dockerfiles/hadmin_store" "ghcr.io/hstreamdb/hadmin-store" "" "latest"
+}
+
 # -----------------------------------------------------------------------------
 # Outdated
 #
