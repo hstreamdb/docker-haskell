@@ -57,6 +57,44 @@ _push_manifest() {
     $DOCKER_BIN manifest push $image:$tag
 }
 
+_buildx() {
+    dockerfile="$1"
+    image_name="$2"
+    target="$3"
+    tag="$4"
+    test -n "$target" && target="--target $target"
+    metadata_file=$(mktemp)
+
+    # build and push digest
+    docker buildx build \
+        --file $dockerfile \
+        $target \
+        --output type=image,name=$image_name,push-by-digest=true,name-canonical=true,push=true \
+        --metadata-file $metadata_file \
+        .
+    digest=$(python3 -c "import json; d = json.load(open('$metadata_file')); print(d['containerimage.digest'])")
+
+    # writes to local image store, so it will appear in `docker images`
+    docker buildx build \
+        --file $dockerfile $target \
+        --output type=docker,name=$image_name:$tag .
+
+    # create tag from digests
+    #
+    # TODO: update digest for the architecture
+    #
+    # manifests=$(docker buildx imagetools inspect --raw $image_name)
+    # parse_manifests="import json; d = $manifests; \
+    # print(d['manifests']) \
+    # for m in d['manifests']
+    #   if m['platform']['architecture'] == ...
+    # "
+    # x=$(python3 -c "$parse_manifests")
+    docker buildx imagetools create \
+        --tag $image_name:$tag \
+        $image_name@$digest
+}
+
 # -----------------------------------------------------------------------------
 
 setup() {
@@ -64,9 +102,54 @@ setup() {
     git clone --recurse-submodules https://github.com/hstreamdb/docker-haskell.git
     git clone --recurse-submodules https://github.com/hstreamdb/hstream.git
     cd $LD_DIR && git checkout -b stable origin/stable
+
+    # XXX: Required for push-by-digest feature
+    #docker buildx create --use --name build --node build --driver-opt network=host
 }
 
 # -----------------------------------------------------------------------------
+
+logdevice_builder() {
+    cd $LD_DIR
+    git checkout stable
+    _buildx "docker/Dockerfile.builder" "hstreamdb/logdevice-builder" "" "latest"
+}
+
+logdevice() {
+    cd $LD_DIR
+    git checkout stable
+
+    _buildx "docker/Dockerfile" "hstreamdb/logdevice" "" "latest"
+    _buildx "docker/Dockerfile" "hstreamdb/logdevice-client" "client" "latest"
+}
+
+logdevice_builder_rqlite() {
+    cd $LD_DIR
+    git checkout main
+    _buildx "docker/Dockerfile.builder" "hstreamdb/logdevice-builder" "" "rqlite"
+}
+
+logdevice_rqlite() {
+    cd $LD_DIR
+    git checkout main
+
+    _buildx "docker/Dockerfile" "hstreamdb/logdevice" "" "rqlite"
+    _buildx "docker/Dockerfile" "hstreamdb/logdevice-client" "client" "rqlite"
+}
+
+# TODO
+# grpc
+# ghc
+
+hsthrift() {
+    cd $HS_DIR
+    _buildx "dockerfiles/hsthrift" "ghcr.io/hstreamdb/hsthrift" "" "latest"
+}
+
+# -----------------------------------------------------------------------------
+# Outdated
+#
+# TODO: use buildx instead
 
 build_logdevice_builder() {
     cd $LD_DIR
