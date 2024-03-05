@@ -57,52 +57,6 @@ _push_manifest() {
     $DOCKER_BIN manifest push $image:$tag
 }
 
-_buildx() {
-    dockerfile="$1"
-    image_name="$2"
-    target="$3"
-    tags="$4" # can be multiple, e.g. "tag1 tag2"
-    # Optional
-    build_args="$5"
-
-    test -n "$target" && target="--target $target"
-    metadata_file=$(mktemp)
-
-    # build and push digest
-    docker buildx build \
-        --file $dockerfile \
-        $target $build_args \
-        --output type=image,name=$image_name,push-by-digest=true,name-canonical=true,push=true \
-        --metadata-file $metadata_file \
-        .
-    digest=$(python3 -c "import json; d = json.load(open('$metadata_file')); print(d['containerimage.digest'])")
-
-    # [Optional] writes to local image store, so it will appear in `docker images`
-    for tag in $tags; do
-        docker buildx build \
-            --file $dockerfile $target $build_args \
-            --output type=docker,name=$image_name:$tag .
-    done
-
-    # Push tag from digests
-    #
-    # TODO: update digest for the architecture
-    #
-    # manifests=$(docker buildx imagetools inspect --raw $image_name)
-    # parse_manifests="import json; d = $manifests; \
-    # print(d['manifests']) \
-    # for m in d['manifests']
-    #   if m['platform']['architecture'] == ...
-    # "
-    # x=$(python3 -c "$parse_manifests")
-    for tag in $tags; do
-        tag_param="$tag_param --tag $image_name:$tag"
-    done
-    docker buildx imagetools create \
-        $tag_param \
-        $image_name@$digest
-}
-
 # -----------------------------------------------------------------------------
 
 setup() {
@@ -110,93 +64,7 @@ setup() {
     git clone --recurse-submodules https://github.com/hstreamdb/docker-haskell.git
     git clone --recurse-submodules https://github.com/hstreamdb/hstream.git
     cd $LD_DIR && git checkout -b stable origin/stable
-
-    # XXX: Required for push-by-digest feature
-    #docker buildx create --use --name build --node build --driver-opt network=host
 }
-
-# -----------------------------------------------------------------------------
-
-logdevice_builder() {
-    cd $LD_DIR
-    git checkout stable
-    _buildx "docker/Dockerfile.builder" "hstreamdb/logdevice-builder" "" "latest"
-}
-
-logdevice() {
-    cd $LD_DIR
-    git checkout stable
-
-    _buildx "docker/Dockerfile" "hstreamdb/logdevice" "" "latest"
-    _buildx "docker/Dockerfile" "hstreamdb/logdevice-client" "client" "latest"
-}
-
-logdevice_builder_rqlite() {
-    cd $LD_DIR
-    git checkout main
-    _buildx "docker/Dockerfile.builder" "hstreamdb/logdevice-builder" "" "rqlite"
-}
-
-logdevice_rqlite() {
-    cd $LD_DIR
-    git checkout main
-
-    _buildx "docker/Dockerfile" "hstreamdb/logdevice" "" "rqlite"
-    _buildx "docker/Dockerfile" "hstreamdb/logdevice-client" "client" "rqlite"
-}
-
-# TODO
-# grpc
-# ghc
-
-hsthrift() {
-    cd $HS_DIR
-    _buildx "dockerfiles/hsthrift" "ghcr.io/hstreamdb/hsthrift" "" "latest"
-}
-
-hadmin_store() {
-    cd $HS_DIR
-    _buildx "dockerfiles/hadmin_store" "ghcr.io/hstreamdb/hadmin-store" "" "latest"
-}
-
-haskell() {
-    haskell810
-    haskell810_rqlite
-
-    haskell904
-    haskell904_rqlite
-}
-
-haskell810() {
-    cd $HS_DIR
-    _buildx "Dockerfile" "hstreamdb/haskell" \
-        "" "8.10.7 8.10" \
-        "--build-arg GHC=8.10.7 --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client"
-}
-
-haskell810_rqlite() {
-    cd $HS_DIR
-    _buildx "Dockerfile" "hstreamdb/haskell" \
-        "" "rqlite_8.10.7 rqlite_8.10" \
-        "--build-arg GHC=8.10.7 --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client:rqlite"
-}
-
-haskell904() {
-    cd $HS_DIR
-    _buildx "Dockerfile" "hstreamdb/haskell" \
-        "" "9.4.8 9.4 latest" \
-        "--build-arg GHC=9.4.8 --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client"
-}
-
-haskell904_rqlite() {
-    cd $HS_DIR
-    _buildx "Dockerfile" "hstreamdb/haskell" \
-        "" "rqlite_9.4.8 rqlite_9.4 rqlite" \
-        "--build-arg GHC=9.4.8 --build-arg LD_CLIENT_IMAGE=hstreamdb/logdevice-client:rqlite"
-}
-
-# TODO
-# hstream
 
 # -----------------------------------------------------------------------------
 # Outdated

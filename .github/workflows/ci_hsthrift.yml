@@ -23,4 +23,5 @@ jobs:
 
       - name: Build & Push images
         run: |
-          HS_DIR='.' ./build.sh hsthrift
+          pip3 install fire
+          ./build.py hsthrift --hs_dir="." --no_write_to_docker

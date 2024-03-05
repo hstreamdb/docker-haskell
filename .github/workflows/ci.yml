@@ -32,9 +32,10 @@ jobs:
 
       - name: Build & Push images
         run: |
+          pip3 install fire
           if [ "${{ inputs.ghc }}" == "all" ]; then
-            HS_DIR='.' ./build.sh haskell
+            ./build.py haskell --hs_dir="." --no_write_to_docker
           else
-            HS_DIR='.' ./build.sh haskell${{ inputs.ghc }}
-            HS_DIR='.' ./build.sh haskell${{ inputs.ghc }}_rqlite
+            ./build.py haskell${{ inputs.ghc }} --hs_dir="." --no_write_to_docker
+            ./build.py haskell${{ inputs.ghc }}_rqlite --hs_dir="." --no_write_to_docker
           fi
