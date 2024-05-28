@@ -32,8 +32,13 @@ RUN apt-get update && \
     update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-11 20 && \
     rm -rf /var/lib/apt/lists/*
 
-ARG CABAL_INSTALL=3.8.1.0
-ARG CABAL_INSTALL_RELEASE_KEY=E9EC5616017C3EE26B33468CCE1ED8AE0B011D8C
+# ------------------------------------------------------------------------------
+# Cabal
+#
+# https://downloads.haskell.org/~cabal
+
+ARG CABAL_INSTALL=3.10.3.0
+ARG CABAL_INSTALL_RELEASE_KEY=EAF2A9A722C0C96F2B431CA511AAD8CEDEE0CAEF
 
 # sha256 from https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/SHA256SUMS
 RUN \
@@ -45,10 +50,10 @@ RUN \
   CABAL_INSTALL_SHA256SUMS_URL="https://downloads.haskell.org/~cabal/cabal-install-$CABAL_INSTALL/SHA256SUMS"; \
   case "$ARCH" in \
     'aarch64') \
-      CABAL_INSTALL_SHA256='c7fa9029f2f829432dd9dcf764e58605fbb7431db79234feb3e46684a9b37214'; \
+      CABAL_INSTALL_SHA256='92d341620c60294535f03098bff796ef6de2701de0c4fcba249cde18a2923013'; \
       ;; \
     'x86_64') \
-      CABAL_INSTALL_SHA256='c71a1a46fd42d235bb86be968660815c24950e5da2d1ff4640da025ab520424b'; \
+      CABAL_INSTALL_SHA256='1d7a7131402295b01f25be5373fde095a404c45f9b5a5508fb7474bb0d3d057a'; \
       ;; \
     *) echo >&2 "error: unsupported architecture '$ARCH'"; exit 1 ;; \
   esac; \
@@ -68,8 +73,12 @@ RUN \
   \
   cabal --version
 
-ARG GHC=9.2.8
-# Note that this key is not for ghc9.4+
+# ------------------------------------------------------------------------------
+# GHC
+#
+# https://downloads.haskell.org/~ghc
+
+ARG GHC=9.6.5
 ARG GHC_RELEASE_KEY=88B57FCF7DB53B4DB3BFA4B1588764FBE22D19C4
 
 # GHC 8.10 requires LLVM version 9 - 12 on aarch64
@@ -85,23 +94,28 @@ RUN \
   set -eux; \
   cd /tmp; \
   ARCH="$(uname -m)"; \
-  GHC_EXTRACT_NAME="ghc-$GHC"; \
+  GHC_EXTRACT_NAME="ghc-$GHC-$ARCH-unknown-linux"; \
   case "$ARCH" in \
     'aarch64') \
       case "$GHC" in \
         '8.10.7') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
-          GHC_SHA256='fad2417f9b295233bf8ade79c0e6140896359e87be46cb61cd1d35863d9d0e55'; \
+          GHC_SHA256="fad2417f9b295233bf8ade79c0e6140896359e87be46cb61cd1d35863d9d0e55"; \
+          GHC_EXTRACT_NAME="ghc-$GHC"; \
           ;; \
         '9.2.8') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
           GHC_SHA256='645433359d8ad9e7b286f85ef5111db1b787ee3712c24c5dfde7c62769aa59a4'; \
+          GHC_EXTRACT_NAME="ghc-$GHC"; \
           ;; \
         '9.4.8') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
           GHC_SHA256='278e287e1ee624712b9c6d7803d1cf915ca1cce56e013b0a16215eb8dfeb1531'; \
           GHC_RELEASE_KEY='88b57fcf7db53b4db3bfa4b1588764fbe22d19c4'; \
-          GHC_EXTRACT_NAME="ghc-$GHC-$ARCH-unknown-linux"; \
+          ;; \
+        '9.6.5') \
+          GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb10-linux.tar.xz"; \
+          GHC_SHA256='fc4e2df394b9d6f48bdb0abaabad1c97825264cbe4e75e7463fc794cb3f87047'; \
           ;; \
         *) echo >&2 "error: unsupported ghc '$GHC'" ; exit 1 ;; \
       esac; \
@@ -111,16 +125,22 @@ RUN \
         '8.10.7') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-fedora27-linux.tar.xz"; \
           GHC_SHA256='b6ed67049a23054a8042e65c9976d5e196e5ee4e83b29b2ee35c8a22ab1e5b73'; \
+          GHC_EXTRACT_NAME="ghc-$GHC"; \
           ;; \
         '9.2.8') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-ubuntu20.04-linux.tar.xz"; \
           GHC_SHA256='6e4adc184a53ca9d9dd8c11c6611d0643fdc3b76550ae769e378d9edb2bda745'; \
+          GHC_EXTRACT_NAME="ghc-$GHC"; \
           ;; \
         '9.4.8') \
           GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb11-linux.tar.xz"; \
           GHC_SHA256='2743629d040f3213499146cb5154621d6f25e85271019afc9b9009e04d66bf6c'; \
           GHC_RELEASE_KEY='88b57fcf7db53b4db3bfa4b1588764fbe22d19c4'; \
           GHC_EXTRACT_NAME="ghc-$GHC-$ARCH-unknown-linux"; \
+          ;; \
+        '9.6.5') \
+          GHC_URL="https://downloads.haskell.org/~ghc/$GHC/ghc-$GHC-$ARCH-deb11-linux.tar.xz"; \
+          GHC_SHA256='8cd8dc9c870540dab142f2dc4eda174a98be7312975696169c363704d8fcf094'; \
           ;; \
         *) echo >&2 "error: unsupported ghc '$GHC'" ; exit 1 ;; \
       esac; \
@@ -144,6 +164,8 @@ RUN \
   rm -rf "$GNUPGHOME" /tmp/* ; \
   \
   "/opt/ghc/$GHC/bin/ghc" --version
+
+# ------------------------------------------------------------------------------
 
 ENV PATH /root/.cabal/bin:/root/.local/bin:/opt/ghc/${GHC}/bin:$PATH
 
