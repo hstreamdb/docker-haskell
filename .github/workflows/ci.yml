@@ -11,7 +11,12 @@ on:
         options:
           - 810
           - 904
+          - 906
           - all
+      ghc_user:
+        description: "ghc version by user"
+        required: false
+        type: string
 
 jobs:
   build:
@@ -33,9 +38,14 @@ jobs:
       - name: Build & Push images
         run: |
           pip3 install fire
-          if [ "${{ inputs.ghc }}" == "all" ]; then
-            ./build.py haskell --hs_dir="." --no_write_to_docker
+          if [ -z "${{ inputs.ghc_user }}" ]; then
+            if [ "${{ inputs.ghc }}" == "all" ]; then
+              ./build.py haskell --hs_dir="." --no_write_to_docker
+            else
+              ./build.py haskell${{ inputs.ghc }} --hs_dir="." --no_write_to_docker
+              ./build.py haskell${{ inputs.ghc }}_rqlite --hs_dir="." --no_write_to_docker
+            fi
           else
-            ./build.py haskell${{ inputs.ghc }} --hs_dir="." --no_write_to_docker
-            ./build.py haskell${{ inputs.ghc }}_rqlite --hs_dir="." --no_write_to_docker
+            ./build.py haskell${{ inputs.ghc_user }} --hs_dir="." --no_write_to_docker
+            ./build.py haskell${{ inputs.ghc_user }}_rqlite --hs_dir="." --no_write_to_docker
           fi
