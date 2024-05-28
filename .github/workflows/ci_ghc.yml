@@ -1,56 +1,44 @@
 name: ghc
 
-# TODO:
-
 on:
-  push:
-    tags:
-      - "*"
-    branches:
-      - release
-
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      ghc:
+        description: "ghc version"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - 810
+          - 904
+          - 906
+          - all
 
 jobs:
-  init-ghc-haskell:
+  build:
     runs-on: ubuntu-latest
-    outputs:
-      skip: ${{ steps.check-if-skip.outputs.skip }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - id: check-if-skip
-        uses: ./.github/actions/check-if-skip
-        with:
-          checksum-file: checksum/ghc_from_haskell.sha256sum
+          submodules: "recursive"
 
-  build-ghc-haskell:
-    runs-on: ubuntu-latest
-    needs: init-ghc-haskell
-    name: build-ghc-${{ matrix.ghc }}
-    if: ${{ needs.init-ghc-haskell.outputs.skip == 'false' }}
-    strategy:
-      matrix:
-        ghc: [ghc810, ghc902, ghc904]
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v3
 
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: login to github container registry
+      - name: Login to github container registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build & push images
+      - name: Build & Push images
         run: |
-          HS_DIR='.' ./build.sh build_${{ matrix.ghc }}
-          HS_DIR='.' ./build.sh push_${{ matrix.ghc }}
-          HS_DIR='.' ./build.sh push_${{ matrix.ghc }}_manifest
-          if [ "${{ matrix.ghc }}" == "ghc902" ]; then
-            HS_DIR='.' ./build.sh push_ghc_latest_manifest 9.2.8
+          pip3 install fire
+          if [ "${{ inputs.ghc }}" == "all" ]; then
+            ./build.py ghc --hs_dir="." --no_write_to_docker
+          else
+            ./build.py ghc${{ inputs.ghc }} --hs_dir="." --no_write_to_docker
           fi
 
   # ----------------------
