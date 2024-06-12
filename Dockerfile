@@ -69,7 +69,7 @@ COPY --from=ghcr.io/hstreamdb/hsthrift:latest \
     /usr/local/bin/thrift-compiler
 
 # ------------------------------------------------------------------------------
-# FIXME: hadmim-store
+# Install hadmim-store
 
 COPY --from=ghcr.io/hstreamdb/hadmin-store:latest \
     /usr/local/bin/hadmin-store \

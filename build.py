@@ -10,6 +10,14 @@ import tempfile
 SUPPORT_PLATFORMS = ["linux/amd64", "linux/arm64"]
 
 
+def log(s):
+    print(f"\033[96m{s}\033[0m")
+
+
+def warn(s):
+    print(f"\033[93m{s}\033[0m")
+
+
 def get_current_platform():
     import platform
 
@@ -17,20 +25,18 @@ def get_current_platform():
     machine = platform.machine()
 
     if system_os != "linux":
-        raise ValueError(f"unsupported platform: {system_os}")
+        warn(f"Warning: runing on a non-linux platform: {system_os}")
 
     cur_platform = None
     if machine in ["x86_64", "amd64"]:
-        cur_platform = f"{system_os}/amd64"
+        # Only linux is supported
+        cur_platform = "linux/amd64"
     elif platform.machine() in ["aarch64", "arm64"]:
-        cur_platform = f"{system_os}/arm64"
+        # Only linux is supported
+        cur_platform = "linux/arm64"
 
     assert cur_platform in SUPPORT_PLATFORMS
     return cur_platform
-
-
-def log(s):
-    print(f"\033[96m{s}\033[0m")
 
 
 def run(cmd, shell=True, check=True, interactive=False, **kw):
@@ -365,6 +371,7 @@ def _haskell(tags, ghc, ld_image, hs_dir, no_push, no_write_to_docker):
     )
 
 
+# Deprecated
 def haskell810(
     hs_dir="./docker-haskell", no_push=False, no_write_to_docker=False
 ):
@@ -378,6 +385,7 @@ def haskell810(
     )
 
 
+# Deprecated
 def haskell810_rqlite(
     hs_dir="./docker-haskell", no_push=False, no_write_to_docker=False
 ):
