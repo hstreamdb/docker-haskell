@@ -80,6 +80,27 @@ RUN mkdir -p /etc/bash_completion.d && \
     /usr/local/bin/hadmin-store --bash-completion-script /usr/local/bin/hadmin-store > /etc/bash_completion.d/hadmin-store
 
 # ------------------------------------------------------------------------------
+# Install fdb client
+
+RUN \
+  set -eux; \
+  cd /tmp; \
+  ARCH="$(uname -m)"; \
+  # linux arm64: https://github.com/apple/foundationdb/issues/11448 \
+  case "$ARCH" in \
+    'x86_64') \
+      DOWNLOAD_URL="https://github.com/apple/foundationdb/releases/download/7.1.61/foundationdb-clients_7.1.61-1_amd64.deb"; \
+      ;; \
+    *) echo >&2 "error: unsupported architecture '$ARCH'"; exit 1 ;; \
+  esac; \
+  curl -fSL "$DOWNLOAD_URL" -o fdb_client.deb; \
+  curl -sSL "$DOWNLOAD_URL.sha256" -o fdb_client.sha256; \
+  echo "$(cat fdb_client.sha256 | cut -d' ' -f1) fdb_client.deb" | sha256sum --strict --check; \
+  dpkg -i fdb_client.deb; \
+  rm -rf /tmp/fdb*; \
+  fdbcli --version;
+
+# ------------------------------------------------------------------------------
 
 ENV LANG C.UTF-8
 CMD ["ghci"]
